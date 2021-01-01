@@ -4,7 +4,7 @@
 #include <nvs_flash.h>
 #include <nvs.h>
 #include <esp_bt.h>
-#include <EspWifiSetup.h>
+#include <AppWifi.h>
 #include "version.h"
 
 // Configuration
@@ -16,7 +16,7 @@ void setup()
   ESP_ERROR_CHECK_WITHOUT_ABORT(esp_bt_mem_release(ESP_BT_MODE_BTDM));
 
   // WiFi
-  WiFiSetup(WIFI_SETUP_WPS);
+  AppWiFi.begin(APP_WIFI_SETUP_WPS);
 
   // Done
   pinMode(0, OUTPUT);
