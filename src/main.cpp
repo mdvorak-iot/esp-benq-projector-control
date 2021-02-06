@@ -88,7 +88,7 @@ void loop()
   vTaskDelayUntil(&previousWakeTime, MAIN_LOOP_INTERVAL / portTICK_PERIOD_MS);
 }
 
-extern "C" void app_main()
+extern "C" _Noreturn void app_main()
 {
   setup();
   for (;;)
