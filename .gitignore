@@ -6,3 +6,5 @@
 /CMakeListsPrivate.txt
 /cmake-build-*/
 .vscode/settings.json
+sdkconfig
+CMakeLists*
