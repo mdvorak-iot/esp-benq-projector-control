@@ -1,15 +1,21 @@
 #include <esp_wifi.h>
 #include <esp_log.h>
 #include <nvs_flash.h>
+#include <driver/gpio.h>
 #include <double_reset.h>
 #include <wps_config.h>
 #include <wifi_reconnect.h>
+#include "sdkconfig.h"
 #include "version.h"
 
 // Configuration
-static const char TAG[] = "template";
+static const char TAG[] = "main";
 
-const auto MAIN_LOOP_INTERVAL = 1000;
+const uint32_t MAIN_LOOP_INTERVAL = 1000;
+
+const gpio_num_t STATUS_LED_GPIO = (gpio_num_t)CONFIG_STATUS_LED_GPIO;
+const uint8_t STATUS_LED_ON = CONFIG_STATUS_LED_ON;
+const uint8_t STATUS_LED_OFF = (~CONFIG_STATUS_LED_ON & 1);
 
 void setup()
 {
@@ -26,6 +32,11 @@ void setup()
   // NOTE this should be called as soon as possible, ideally right after nvs init
   bool reconfigure = false;
   ESP_ERROR_CHECK(double_reset_start(&reconfigure, 5000));
+
+  // Status LED
+  ESP_ERROR_CHECK(gpio_reset_pin(STATUS_LED_GPIO));
+  ESP_ERROR_CHECK(gpio_set_direction(STATUS_LED_GPIO, GPIO_MODE_OUTPUT));
+  ESP_ERROR_CHECK(gpio_set_level(STATUS_LED_GPIO, STATUS_LED_ON));
 
   // Initalize WiFi
   ESP_ERROR_CHECK(esp_netif_init());
@@ -69,11 +80,12 @@ void loop()
 {
   // Toggle Status LED
   static auto status = false;
-  // TODO digitalWrite(0, (status = !status) ? HIGH : LOW);
+  ESP_ERROR_CHECK_WITHOUT_ABORT(gpio_set_level(STATUS_LED_GPIO, (status = !status) ? STATUS_LED_ON : STATUS_LED_OFF));
+  ESP_LOGI(TAG, "status: %d", status ? 1 : 0);
 
   // Wait
   static auto previousWakeTime = xTaskGetTickCount();
-  vTaskDelayUntil(&previousWakeTime, MAIN_LOOP_INTERVAL);
+  vTaskDelayUntil(&previousWakeTime, MAIN_LOOP_INTERVAL / portTICK_PERIOD_MS);
 }
 
 extern "C" void app_main()
