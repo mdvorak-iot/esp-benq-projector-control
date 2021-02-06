@@ -1,1 +1,1 @@
-# esp32-template
+# esp-app-template
