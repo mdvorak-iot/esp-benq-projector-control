@@ -81,7 +81,6 @@ void loop()
   // Toggle Status LED
   static auto status = false;
   ESP_ERROR_CHECK_WITHOUT_ABORT(gpio_set_level(STATUS_LED_GPIO, (status = !status) ? STATUS_LED_ON : STATUS_LED_OFF));
-  ESP_LOGI(TAG, "status: %d", status ? 1 : 0);
 
   // Wait
   static auto previousWakeTime = xTaskGetTickCount();
