@@ -20,23 +20,23 @@ const uint8_t STATUS_LED_OFF = (~CONFIG_STATUS_LED_ON & 1);
 void setup()
 {
   // Initialize NVS
-  esp_err_t ret = nvs_flash_init();
-  if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
+  esp_err_t err = nvs_flash_init();
+  if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND)
   {
     ESP_ERROR_CHECK(nvs_flash_erase());
-    ret = nvs_flash_init();
+    err = nvs_flash_init();
   }
-  ESP_ERROR_CHECK(ret);
+  ESP_ERROR_CHECK(err);
 
   // Check double reset
   // NOTE this should be called as soon as possible, ideally right after nvs init
   bool reconfigure = false;
-  ESP_ERROR_CHECK(double_reset_start(&reconfigure, 5000));
+  ESP_ERROR_CHECK(double_reset_start(&reconfigure, DOUBLE_RESET_DEFAULT_TIMEOUT));
 
   // Status LED
-  ESP_ERROR_CHECK(gpio_reset_pin(STATUS_LED_GPIO));
-  ESP_ERROR_CHECK(gpio_set_direction(STATUS_LED_GPIO, GPIO_MODE_OUTPUT));
-  ESP_ERROR_CHECK(gpio_set_level(STATUS_LED_GPIO, STATUS_LED_ON));
+  ESP_ERROR_CHECK_WITHOUT_ABORT(gpio_reset_pin(STATUS_LED_GPIO));
+  ESP_ERROR_CHECK_WITHOUT_ABORT(gpio_set_direction(STATUS_LED_GPIO, GPIO_MODE_OUTPUT));
+  ESP_ERROR_CHECK_WITHOUT_ABORT(gpio_set_level(STATUS_LED_GPIO, STATUS_LED_ON));
 
   // Initalize WiFi
   ESP_ERROR_CHECK(esp_netif_init());
@@ -57,6 +57,17 @@ void setup()
   {
     ESP_LOGI(TAG, "reconfigure request detected, starting WPS");
     ESP_ERROR_CHECK(wps_config_start());
+
+    // Fast blinking LED loop
+    TickType_t start = xTaskGetTickCount();
+    bool status_led = true;
+
+    while (!wifi_reconnect_is_connected() && (xTaskGetTickCount() - start) < WPS_CONFIG_TIMEOUT_MS / portTICK_PERIOD_MS)
+    {
+      gpio_set_level(STATUS_LED_GPIO, (status_led = !status_led) ? STATUS_LED_ON : STATUS_LED_OFF);
+      vTaskDelay(50 / portTICK_PERIOD_MS);
+    }
+    gpio_set_level(STATUS_LED_GPIO, STATUS_LED_ON);
   }
   else
   {
@@ -66,7 +77,7 @@ void setup()
 
   // Wait for WiFi
   ESP_LOGI(TAG, "waiting for wifi");
-  if (!wifi_reconnect_wait_for_connection(AUTO_WPS_TIMEOUT_MS + WIFI_RECONNECT_CONNECT_TIMEOUT_MS))
+  if (!wifi_reconnect_wait_for_connection(WIFI_RECONNECT_CONNECT_TIMEOUT_MS))
   {
     ESP_LOGE(TAG, "failed to connect to wifi!");
     // NOTE either fallback into emergency operation mode, do nothing, restart..
@@ -79,12 +90,12 @@ void setup()
 void loop()
 {
   // Toggle Status LED
-  static auto status = false;
-  ESP_ERROR_CHECK_WITHOUT_ABORT(gpio_set_level(STATUS_LED_GPIO, (status = !status) ? STATUS_LED_ON : STATUS_LED_OFF));
+  static auto status_led = true;
+  gpio_set_level(STATUS_LED_GPIO, double_reset_pending() || (status_led = !status_led) ? STATUS_LED_ON : STATUS_LED_OFF);
 
   // Wait
-  static auto previousWakeTime = xTaskGetTickCount();
-  vTaskDelayUntil(&previousWakeTime, MAIN_LOOP_INTERVAL / portTICK_PERIOD_MS);
+  static auto previous_wake_time = xTaskGetTickCount();
+  vTaskDelayUntil(&previous_wake_time, MAIN_LOOP_INTERVAL / portTICK_PERIOD_MS);
 }
 
 extern "C" _Noreturn void app_main()
