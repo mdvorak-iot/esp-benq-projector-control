@@ -25,7 +25,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Release
       run: |
-        export PLATFORMIO_BUILD_FLAGS='-DVERSION=\"${{ github.ref }}\"'
+        export PLATFORMIO_BUILD_FLAGS='-D CONFIG_APP_PROJECT_VER=\"${{ github.ref }}\"'
         platformio run -e release
     - name: Upload firmware.bin
       uses: actions/upload-release-asset@v1

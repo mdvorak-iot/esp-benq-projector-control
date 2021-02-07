@@ -1,5 +1,7 @@
 #include <esp_wifi.h>
 #include <esp_log.h>
+#include <esp_sleep.h>
+#include <esp_pm.h>
 #include <nvs_flash.h>
 #include <driver/gpio.h>
 #include <double_reset.h>
@@ -7,17 +9,18 @@
 #include <wifi_reconnect.h>
 #include <status_led.h>
 #include "sdkconfig.h"
-#include "version.h"
 
 // Configuration
 static const char TAG[] = "main";
-static const char HOSTNAME[] = "esp-app-template"; // You want unique name per device, probably dynamic in configuration
 
-const uint32_t MAIN_LOOP_INTERVAL = 1000;
+#ifndef CONFIG_APP_PROJECT_VER
+#define CONFIG_APP_PROJECT_VER "DEVEL"
+#endif
 
 const gpio_num_t STATUS_LED_GPIO = (gpio_num_t)CONFIG_STATUS_LED_GPIO;
 const uint32_t STATUS_LED_ON = CONFIG_STATUS_LED_ON;
 
+// Global Variables
 static status_led_handle_t status_led = NULL;
 
 void setup()
@@ -62,7 +65,7 @@ void setup()
   ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_FLASH));
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
   ESP_ERROR_CHECK(esp_wifi_start());
-  ESP_ERROR_CHECK(tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, HOSTNAME));
+  ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_MAX_MODEM));
 
   // Reconnection watch
   ESP_ERROR_CHECK(wifi_reconnect_start()); // NOTE this must be called before connect, otherwise it might miss connected event
@@ -91,14 +94,12 @@ void setup()
   }
 
   // Setup complete
-  ESP_LOGI(TAG, "started %s", VERSION);
+  ESP_LOGI(TAG, "started %s", CONFIG_APP_PROJECT_VER);
 }
 
 void loop()
 {
-  // Wait
-  static auto previous_wake_time = xTaskGetTickCount();
-  vTaskDelayUntil(&previous_wake_time, MAIN_LOOP_INTERVAL / portTICK_PERIOD_MS);
+  vTaskDelay(1000 / portTICK_PERIOD_MS);
 }
 
 extern "C" _Noreturn void app_main()
