@@ -5,17 +5,20 @@
 #include <double_reset.h>
 #include <wps_config.h>
 #include <wifi_reconnect.h>
+#include <status_led.h>
 #include "sdkconfig.h"
 #include "version.h"
 
 // Configuration
 static const char TAG[] = "main";
+static const char HOSTNAME[] = "esp-app-template"; // You want unique name per device, probably dynamic in configuration
 
 const uint32_t MAIN_LOOP_INTERVAL = 1000;
 
 const gpio_num_t STATUS_LED_GPIO = (gpio_num_t)CONFIG_STATUS_LED_GPIO;
-const uint8_t STATUS_LED_ON = CONFIG_STATUS_LED_ON;
-const uint8_t STATUS_LED_OFF = (~CONFIG_STATUS_LED_ON & 1);
+const uint32_t STATUS_LED_ON = CONFIG_STATUS_LED_ON;
+
+static status_led_handle_t status_led = NULL;
 
 void setup()
 {
@@ -34,9 +37,8 @@ void setup()
   ESP_ERROR_CHECK(double_reset_start(&reconfigure, DOUBLE_RESET_DEFAULT_TIMEOUT));
 
   // Status LED
-  ESP_ERROR_CHECK_WITHOUT_ABORT(gpio_reset_pin(STATUS_LED_GPIO));
-  ESP_ERROR_CHECK_WITHOUT_ABORT(gpio_set_direction(STATUS_LED_GPIO, GPIO_MODE_OUTPUT));
-  ESP_ERROR_CHECK_WITHOUT_ABORT(gpio_set_level(STATUS_LED_GPIO, STATUS_LED_ON));
+  ESP_ERROR_CHECK_WITHOUT_ABORT(status_led_create(STATUS_LED_GPIO, STATUS_LED_ON, &status_led));
+  ESP_ERROR_CHECK_WITHOUT_ABORT(status_led_set_interval(status_led, 500, true));
 
   // Initalize WiFi
   ESP_ERROR_CHECK(esp_netif_init());
@@ -48,6 +50,7 @@ void setup()
   ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_FLASH));
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
   ESP_ERROR_CHECK(esp_wifi_start());
+  ESP_ERROR_CHECK(tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, HOSTNAME));
 
   // Reconnection watch
   ESP_ERROR_CHECK(wifi_reconnect_start()); // NOTE this must be called before connect, otherwise it might miss connected event
@@ -58,16 +61,10 @@ void setup()
     ESP_LOGI(TAG, "reconfigure request detected, starting WPS");
     ESP_ERROR_CHECK(wps_config_start());
 
-    // Fast blinking LED loop
-    TickType_t start = xTaskGetTickCount();
-    bool status_led = true;
-
-    while (!wifi_reconnect_is_connected() && (xTaskGetTickCount() - start) < WPS_CONFIG_TIMEOUT_MS / portTICK_PERIOD_MS)
-    {
-      gpio_set_level(STATUS_LED_GPIO, (status_led = !status_led) ? STATUS_LED_ON : STATUS_LED_OFF);
-      vTaskDelay(50 / portTICK_PERIOD_MS);
-    }
-    gpio_set_level(STATUS_LED_GPIO, STATUS_LED_ON);
+    // Wait for WPS to finish
+    ESP_ERROR_CHECK_WITHOUT_ABORT(status_led_set_interval(status_led, 100, true));
+    wifi_reconnect_wait_for_connection(WPS_CONFIG_TIMEOUT_MS);
+    ESP_ERROR_CHECK_WITHOUT_ABORT(status_led_set_interval(status_led, 500, true));
   }
   else
   {
@@ -84,15 +81,12 @@ void setup()
   }
 
   // Setup complete
+  ESP_ERROR_CHECK_WITHOUT_ABORT(status_led_set_interval_for(status_led, 200, false, 600, true));
   ESP_LOGI(TAG, "started %s", VERSION);
 }
 
 void loop()
 {
-  // Toggle Status LED
-  static auto status_led = true;
-  gpio_set_level(STATUS_LED_GPIO, double_reset_pending() || (status_led = !status_led) ? STATUS_LED_ON : STATUS_LED_OFF);
-
   // Wait
   static auto previous_wake_time = xTaskGetTickCount();
   vTaskDelayUntil(&previous_wake_time, MAIN_LOOP_INTERVAL / portTICK_PERIOD_MS);
