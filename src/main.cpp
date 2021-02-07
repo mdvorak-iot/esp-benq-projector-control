@@ -31,6 +31,9 @@ void setup()
   }
   ESP_ERROR_CHECK(err);
 
+  // Event loop
+  ESP_ERROR_CHECK(esp_event_loop_create_default());
+
   // Check double reset
   // NOTE this should be called as soon as possible, ideally right after nvs init
   bool reconfigure = false;
@@ -39,11 +42,19 @@ void setup()
   // Status LED
   ESP_ERROR_CHECK_WITHOUT_ABORT(status_led_create(STATUS_LED_GPIO, STATUS_LED_ON, &status_led));
   ESP_ERROR_CHECK_WITHOUT_ABORT(status_led_set_interval(status_led, 500, true));
-  // TODO it would be nice if status led would be controlled by system events, including custom from libs
+
+  // Events
+  esp_event_handler_register(
+      WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, [](void *, esp_event_base_t, int32_t, void *) { status_led_set_interval(status_led, 500, true); }, NULL);
+  esp_event_handler_register(
+      WIFI_EVENT, WIFI_EVENT_STA_WPS_ER_SUCCESS, [](void *, esp_event_base_t, int32_t, void *) { status_led_set_interval(status_led, 500, true); }, NULL);
+  esp_event_handler_register(
+      WPS_CONFIG, WPS_CONFIG_EVENT_START, [](void *, esp_event_base_t, int32_t, void *) { status_led_set_interval(status_led, 100, true); }, NULL);
+  esp_event_handler_register(
+      IP_EVENT, IP_EVENT_STA_GOT_IP, [](void *, esp_event_base_t, int32_t, void *) { status_led_set_interval_for(status_led, 200, false, 700, true); }, NULL);
 
   // Initalize WiFi
   ESP_ERROR_CHECK(esp_netif_init());
-  ESP_ERROR_CHECK(esp_event_loop_create_default());
   esp_netif_t *sta_netif = esp_netif_create_default_wifi_sta();
   assert(sta_netif);
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
@@ -63,14 +74,12 @@ void setup()
     ESP_ERROR_CHECK(wps_config_start());
 
     // Wait for WPS to finish
-    ESP_ERROR_CHECK_WITHOUT_ABORT(status_led_set_interval(status_led, 100, true));
     wifi_reconnect_wait_for_connection(WPS_CONFIG_TIMEOUT_MS);
-    ESP_ERROR_CHECK_WITHOUT_ABORT(status_led_set_interval(status_led, 500, true));
   }
   else
   {
     // Connect now
-    ESP_ERROR_CHECK(esp_wifi_connect());
+    wifi_reconnect_resume();
   }
 
   // Wait for WiFi
@@ -82,7 +91,6 @@ void setup()
   }
 
   // Setup complete
-  ESP_ERROR_CHECK_WITHOUT_ABORT(status_led_set_interval_for(status_led, 200, false, 600, true));
   ESP_LOGI(TAG, "started %s", VERSION);
 }
 
