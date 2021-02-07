@@ -4,6 +4,7 @@
 #include <esp_pm.h>
 #include <nvs_flash.h>
 #include <driver/gpio.h>
+#include <esp_ota_ops.h>
 #include <double_reset.h>
 #include <wps_config.h>
 #include <wifi_reconnect.h>
@@ -12,10 +13,6 @@
 
 // Configuration
 static const char TAG[] = "main";
-
-#ifndef CONFIG_APP_PROJECT_VER
-#define CONFIG_APP_PROJECT_VER "DEVEL"
-#endif
 
 const gpio_num_t STATUS_LED_GPIO = (gpio_num_t)CONFIG_STATUS_LED_GPIO;
 const uint32_t STATUS_LED_ON = CONFIG_STATUS_LED_ON;
@@ -56,6 +53,10 @@ void setup()
   esp_event_handler_register(
       IP_EVENT, IP_EVENT_STA_GOT_IP, [](void *, esp_event_base_t, int32_t, void *) { status_led_set_interval_for(status_led, 200, false, 700, true); }, NULL);
 
+  // Get app info
+  esp_app_desc_t app_info = {};
+  ESP_ERROR_CHECK_WITHOUT_ABORT(esp_ota_get_partition_description(esp_ota_get_running_partition(), &app_info));
+
   // Initalize WiFi
   ESP_ERROR_CHECK(esp_netif_init());
   esp_netif_t *sta_netif = esp_netif_create_default_wifi_sta();
@@ -66,6 +67,7 @@ void setup()
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
   ESP_ERROR_CHECK(esp_wifi_start());
   ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_MAX_MODEM));
+  ESP_ERROR_CHECK(tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, app_info.project_name));
 
   // Reconnection watch
   ESP_ERROR_CHECK(wifi_reconnect_start()); // NOTE this must be called before connect, otherwise it might miss connected event
@@ -94,7 +96,7 @@ void setup()
   }
 
   // Setup complete
-  ESP_LOGI(TAG, "started %s", CONFIG_APP_PROJECT_VER);
+  ESP_LOGI(TAG, "started %s %s compiled at %s %s", app_info.project_name, app_info.version, app_info.date, app_info.time);
 }
 
 void loop()

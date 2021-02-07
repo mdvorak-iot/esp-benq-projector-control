@@ -7,6 +7,3 @@ CONFIG_ESP32_DEFAULT_CPU_FREQ_80=y
 
 # Disable colored terminal
 CONFIG_LOG_COLORS=n
-
-# Hostname
-CONFIG_LWIP_LOCAL_HOSTNAME="esp-app-template"
