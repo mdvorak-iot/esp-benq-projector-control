@@ -39,6 +39,7 @@ void setup()
   // Status LED
   ESP_ERROR_CHECK_WITHOUT_ABORT(status_led_create(STATUS_LED_GPIO, STATUS_LED_ON, &status_led));
   ESP_ERROR_CHECK_WITHOUT_ABORT(status_led_set_interval(status_led, 500, true));
+  // TODO it would be nice if status led would be controlled by system events, including custom from libs
 
   // Initalize WiFi
   ESP_ERROR_CHECK(esp_netif_init());
