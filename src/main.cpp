@@ -9,7 +9,6 @@
 #include <wps_config.h>
 #include <wifi_reconnect.h>
 #include <status_led.h>
-#include "sdkconfig.h"
 
 // Configuration
 static const char TAG[] = "main";
