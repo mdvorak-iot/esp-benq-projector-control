@@ -68,7 +68,6 @@ void setup()
   ESP_ERROR_CHECK(esp_wifi_start());
   ESP_ERROR_CHECK(tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, app_info.project_name));
 
-  // Reconnection watch
   ESP_ERROR_CHECK(wifi_reconnect_start()); // NOTE this must be called before connect, otherwise it might miss connected event
 
   // Start WPS if WiFi is not configured, or reconfiguration was requested
@@ -95,7 +94,7 @@ void setup()
   }
 
   // Setup complete
-  ESP_LOGI(TAG, "started %s %s compiled at %s %s", app_info.project_name, app_info.version, app_info.date, app_info.time);
+  ESP_LOGI(TAG, "started %s %s", app_info.project_name, app_info.version);
 }
 
 void loop()
