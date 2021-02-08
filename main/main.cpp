@@ -1,7 +1,6 @@
 #include <esp_wifi.h>
 #include <esp_log.h>
 #include <esp_sleep.h>
-#include <esp_pm.h>
 #include <nvs_flash.h>
 #include <driver/gpio.h>
 #include <esp_ota_ops.h>
