@@ -9,10 +9,11 @@
 #include <wifi_reconnect.h>
 #include <status_led.h>
 
-// Configuration
 static const char TAG[] = "main";
 
-void setup()
+static bool reconfigure = false;
+
+void setup_init()
 {
   // Initialize NVS
   esp_err_t err = nvs_flash_init();
@@ -28,7 +29,6 @@ void setup()
 
   // Check double reset
   // NOTE this should be called as soon as possible, ideally right after nvs init
-  bool reconfigure = false;
   ESP_ERROR_CHECK(double_reset_start(&reconfigure, DOUBLE_RESET_DEFAULT_TIMEOUT));
 
   // Status LED
@@ -44,7 +44,15 @@ void setup()
       WPS_CONFIG, WPS_CONFIG_EVENT_START, [](void *, esp_event_base_t, int32_t, void *) { status_led_set_interval(STATUS_LED_DEFAULT, 100, true); }, NULL);
   esp_event_handler_register(
       IP_EVENT, IP_EVENT_STA_GOT_IP, [](void *, esp_event_base_t, int32_t, void *) { status_led_set_interval_for(STATUS_LED_DEFAULT, 200, false, 700, true); }, NULL);
+}
 
+void setup_devices()
+{
+  // Custom devices and other init, that needs to be done before waiting for wifi connection
+}
+
+void setup_wifi()
+{
   // Get app info
   esp_app_desc_t app_info = {};
   ESP_ERROR_CHECK_WITHOUT_ABORT(esp_ota_get_partition_description(esp_ota_get_running_partition(), &app_info));
@@ -68,15 +76,12 @@ void setup()
   {
     ESP_LOGI(TAG, "reconfigure request detected, starting WPS");
     ESP_ERROR_CHECK(wps_config_start());
-
     // Wait for WPS to finish
     wifi_reconnect_wait_for_connection(WPS_CONFIG_TIMEOUT_MS);
   }
-  else
-  {
-    // Connect now
-    wifi_reconnect_resume();
-  }
+
+  // Connect now (needs to be called after WPS)
+  wifi_reconnect_resume();
 
   // Wait for WiFi
   ESP_LOGI(TAG, "waiting for wifi");
@@ -85,21 +90,24 @@ void setup()
     ESP_LOGE(TAG, "failed to connect to wifi!");
     // NOTE either fallback into emergency operation mode, do nothing, restart..
   }
+}
 
-  // Setup complete
+void run()
+{
+}
+
+extern "C" void app_main()
+{
+  // Setup
+  setup_init();
+  setup_devices();
+  setup_wifi();
+
+  // Ready
+  esp_app_desc_t app_info = {};
+  ESP_ERROR_CHECK_WITHOUT_ABORT(esp_ota_get_partition_description(esp_ota_get_running_partition(), &app_info));
   ESP_LOGI(TAG, "started %s %s", app_info.project_name, app_info.version);
-}
 
-void loop()
-{
-  vTaskDelay(1000 / portTICK_PERIOD_MS);
-}
-
-extern "C" _Noreturn void app_main()
-{
-  setup();
-  for (;;)
-  {
-    loop();
-  }
+  // Run
+  run();
 }
