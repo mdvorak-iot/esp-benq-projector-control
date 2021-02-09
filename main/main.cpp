@@ -12,12 +12,6 @@
 // Configuration
 static const char TAG[] = "main";
 
-const gpio_num_t STATUS_LED_GPIO = (gpio_num_t)CONFIG_STATUS_LED_GPIO;
-const uint32_t STATUS_LED_ON = CONFIG_STATUS_LED_ON;
-
-// Global Variables
-static status_led_handle_t status_led = NULL;
-
 void setup()
 {
   // Initialize NVS
@@ -38,18 +32,18 @@ void setup()
   ESP_ERROR_CHECK(double_reset_start(&reconfigure, DOUBLE_RESET_DEFAULT_TIMEOUT));
 
   // Status LED
-  ESP_ERROR_CHECK_WITHOUT_ABORT(status_led_create(STATUS_LED_GPIO, STATUS_LED_ON, &status_led));
-  ESP_ERROR_CHECK_WITHOUT_ABORT(status_led_set_interval(status_led, 500, true));
+  ESP_ERROR_CHECK_WITHOUT_ABORT(status_led_create_default());
+  ESP_ERROR_CHECK_WITHOUT_ABORT(status_led_set_interval(STATUS_LED_DEFAULT, 500, true));
 
   // Events
   esp_event_handler_register(
-      WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, [](void *, esp_event_base_t, int32_t, void *) { status_led_set_interval(status_led, 500, true); }, NULL);
+      WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, [](void *, esp_event_base_t, int32_t, void *) { status_led_set_interval(STATUS_LED_DEFAULT, 500, true); }, NULL);
   esp_event_handler_register(
-      WIFI_EVENT, WIFI_EVENT_STA_WPS_ER_SUCCESS, [](void *, esp_event_base_t, int32_t, void *) { status_led_set_interval(status_led, 500, true); }, NULL);
+      WIFI_EVENT, WIFI_EVENT_STA_WPS_ER_SUCCESS, [](void *, esp_event_base_t, int32_t, void *) { status_led_set_interval(STATUS_LED_DEFAULT, 500, true); }, NULL);
   esp_event_handler_register(
-      WPS_CONFIG, WPS_CONFIG_EVENT_START, [](void *, esp_event_base_t, int32_t, void *) { status_led_set_interval(status_led, 100, true); }, NULL);
+      WPS_CONFIG, WPS_CONFIG_EVENT_START, [](void *, esp_event_base_t, int32_t, void *) { status_led_set_interval(STATUS_LED_DEFAULT, 100, true); }, NULL);
   esp_event_handler_register(
-      IP_EVENT, IP_EVENT_STA_GOT_IP, [](void *, esp_event_base_t, int32_t, void *) { status_led_set_interval_for(status_led, 200, false, 700, true); }, NULL);
+      IP_EVENT, IP_EVENT_STA_GOT_IP, [](void *, esp_event_base_t, int32_t, void *) { status_led_set_interval_for(STATUS_LED_DEFAULT, 200, false, 700, true); }, NULL);
 
   // Get app info
   esp_app_desc_t app_info = {};
