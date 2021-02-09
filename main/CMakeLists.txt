@@ -5,11 +5,11 @@ idf_component_register(
         freertos
         nvs_flash
         log
-        app_update
         esp32
         esp_wifi
+        app_update
         double_reset 
         status_led
-        #wps_config
-        #wifi_reconnect
+        wps_config
+        wifi_reconnect
 )
