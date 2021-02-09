@@ -13,7 +13,7 @@ static const char TAG[] = "main";
 
 static bool reconfigure = false;
 
-void setup_init()
+static void setup_init()
 {
   // Initialize NVS
   esp_err_t err = nvs_flash_init();
@@ -46,12 +46,12 @@ void setup_init()
       IP_EVENT, IP_EVENT_STA_GOT_IP, [](void *, esp_event_base_t, int32_t, void *) { status_led_set_interval_for(STATUS_LED_DEFAULT, 200, false, 700, true); }, NULL);
 }
 
-void setup_devices()
+static void setup_devices()
 {
   // Custom devices and other init, that needs to be done before waiting for wifi connection
 }
 
-void setup_wifi()
+static void setup_wifi()
 {
   // Get app info
   esp_app_desc_t app_info = {};
@@ -92,7 +92,15 @@ void setup_wifi()
   }
 }
 
-void run()
+static void setup_final()
+{
+  // Ready
+  esp_app_desc_t app_info = {};
+  ESP_ERROR_CHECK_WITHOUT_ABORT(esp_ota_get_partition_description(esp_ota_get_running_partition(), &app_info));
+  ESP_LOGI(TAG, "started %s %s", app_info.project_name, app_info.version);
+}
+
+static void run()
 {
 }
 
@@ -102,11 +110,7 @@ extern "C" void app_main()
   setup_init();
   setup_devices();
   setup_wifi();
-
-  // Ready
-  esp_app_desc_t app_info = {};
-  ESP_ERROR_CHECK_WITHOUT_ABORT(esp_ota_get_partition_description(esp_ota_get_running_partition(), &app_info));
-  ESP_LOGI(TAG, "started %s %s", app_info.project_name, app_info.version);
+  setup_final();
 
   // Run
   run();
