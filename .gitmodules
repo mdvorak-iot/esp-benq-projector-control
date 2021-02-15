@@ -15,5 +15,5 @@
 
 [submodule "wifi_reconnect"]
 	path = components/wifi_reconnect
-	url = https://github.com/mdvorak-iot/esp-wps-config.git
-	branch = 7c34f68
+	url = https://github.com/mdvorak-iot/esp-wifi-reconnect.git
+	branch = c620a7a
