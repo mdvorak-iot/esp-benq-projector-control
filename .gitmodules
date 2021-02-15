@@ -1,19 +1,15 @@
 [submodule "double_reset"]
 	path = components/double_reset
 	url = https://github.com/mdvorak-iot/esp-double-reset.git
-	branch = 4ab520a
 
 [submodule "status_led"]
 	path = components/status_led
 	url = https://github.com/mdvorak-iot/esp-status-led.git
-	branch = c9e5947
 
 [submodule "wps_config"]
 	path = components/wps_config
 	url = https://github.com/mdvorak-iot/esp-wps-config.git
-	branch = 44f75bb
-
+	
 [submodule "wifi_reconnect"]
 	path = components/wifi_reconnect
 	url = https://github.com/mdvorak-iot/esp-wifi-reconnect.git
-	branch = c620a7a
