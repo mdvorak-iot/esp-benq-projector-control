@@ -31,7 +31,7 @@ jobs:
           platformio run -e release
 
       - name: Get the upload URL for a release
-        uses: bruceadams/get-release@v1.2.0
+        uses: bruceadams/get-release@v1.2.2
         id: get_release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
