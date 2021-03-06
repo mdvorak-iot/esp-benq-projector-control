@@ -3,7 +3,7 @@
 .idea/
 *.iml
 CMakeListsPrivate.txt
-cmake-build-*/
+cmake-build*/
 build/
 sdkconfig
 sdkconfig.old

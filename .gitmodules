@@ -9,7 +9,7 @@
 [submodule "wps_config"]
 	path = components/wps_config
 	url = https://github.com/mdvorak-iot/esp-wps-config.git
-	
+
 [submodule "wifi_reconnect"]
 	path = components/wifi_reconnect
 	url = https://github.com/mdvorak-iot/esp-wifi-reconnect.git
