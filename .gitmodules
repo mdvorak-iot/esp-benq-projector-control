@@ -25,3 +25,6 @@
 [submodule "aws_iot_shadow"]
 	path = components/aws_iot_shadow
 	url = https://github.com/mdvorak-iot/esp-aws-iot-shadow.git
+[submodule "aws_iot_mqtt_config"]
+	path = components/aws_iot_mqtt_config
+	url = https://github.com/mdvorak-iot/esp-aws-iot-mqtt-config.git

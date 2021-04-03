@@ -16,4 +16,6 @@ idf_component_register(
         wifi_reconnect
         rapidjson
         config_state
+        aws_iot_mqtt_config
+        aws_iot_shadow
 )

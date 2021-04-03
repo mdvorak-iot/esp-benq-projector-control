@@ -1,9 +1,10 @@
 #include "device_state.h"
 #include "hw_config.h"
+#include <aws_iot_shadow.h>
 #include <double_reset.h>
 #include <esp_log.h>
 #include <esp_ota_ops.h>
-#include <esp_wifi.h>
+#include <mqtt_client.h>
 #include <nvs_flash.h>
 #include <status_led.h>
 #include <wps_config.h>
@@ -13,13 +14,16 @@ static const auto STATUS_LED_CONNECTING_INTERVAL = 500u;
 static const auto STATUS_LED_WPS_INTERVAL = 100u;
 
 // Global state
-static status_led_handle_ptr status_led;
 static hw_config config = {};
+static status_led_handle_ptr status_led = nullptr;
+static esp_mqtt_client_handle_t mqtt_client = nullptr;
+aws_iot_shadow_handle_ptr shadow_handle = nullptr;
 
 static void setup_init();
 static void setup_devices();
 extern "C" void setup_wifi(const char *hostname);
-static void setup_final(const esp_app_desc_t *app_info);
+extern "C" void setup_wifi_start();
+extern "C" void setup_aws_iot(esp_mqtt_client_handle_t *out_mqtt_client, aws_iot_shadow_handle_ptr *out_shadow_client);
 
 extern "C" void app_main()
 {
@@ -30,7 +34,9 @@ extern "C" void app_main()
     setup_init();
     setup_devices();
     setup_wifi(app_info.project_name);
-    setup_final(&app_info);
+    setup_aws_iot(&mqtt_client, &shadow_handle);
+    setup_wifi_start(); // this should be last
+    ESP_LOGI(TAG, "started %s %s", app_info.project_name, app_info.version);
 
     // Run
     ESP_LOGI(TAG, "life is good");
@@ -89,21 +95,22 @@ static void setup_init()
     }
 
     // Status LED
-    ESP_ERROR_CHECK_WITHOUT_ABORT(status_led_create(config.status_led_pin, config.status_led_on_state, &status_led));
-    ESP_ERROR_CHECK_WITHOUT_ABORT(status_led_set_interval(status_led, STATUS_LED_CONNECTING_INTERVAL, true));
+    err = status_led_create(config.status_led_pin, config.status_led_on_state, &status_led);
+    if (err == ESP_OK)
+    {
+        ESP_ERROR_CHECK_WITHOUT_ABORT(status_led_set_interval(status_led, STATUS_LED_CONNECTING_INTERVAL, true));
 
-    ESP_ERROR_CHECK_WITHOUT_ABORT(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, status_led_wps_event_handler, nullptr, nullptr));
-    ESP_ERROR_CHECK_WITHOUT_ABORT(esp_event_handler_instance_register(WPS_CONFIG_EVENT, WPS_CONFIG_EVENT_START, status_led_wps_event_handler, nullptr, nullptr));
-    ESP_ERROR_CHECK_WITHOUT_ABORT(esp_event_handler_instance_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, status_led_disconnected_handler, nullptr, nullptr));
+        ESP_ERROR_CHECK_WITHOUT_ABORT(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, status_led_wps_event_handler, nullptr, nullptr));
+        ESP_ERROR_CHECK_WITHOUT_ABORT(esp_event_handler_instance_register(WPS_CONFIG_EVENT, WPS_CONFIG_EVENT_START, status_led_wps_event_handler, nullptr, nullptr));
+        ESP_ERROR_CHECK_WITHOUT_ABORT(esp_event_handler_instance_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, status_led_disconnected_handler, nullptr, nullptr));
+    }
+    else
+    {
+        ESP_LOGE(TAG, "failed to create status_led on pin %d: %d %s", config.status_led_pin, err, esp_err_to_name(err));
+    }
 }
 
 static void setup_devices()
 {
     // Custom devices and other init, that needs to be done before waiting for wifi connection
-}
-
-static void setup_final(const esp_app_desc_t *app_info)
-{
-    // Ready
-    ESP_LOGI(TAG, "started %s %s", app_info->project_name, app_info->version);
 }

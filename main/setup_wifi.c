@@ -34,7 +34,10 @@ void setup_wifi(const char *hostname)
 
     // Resume on WPS end
     ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, wifi_wps_event_handler, NULL, NULL));
+}
 
+void setup_wifi_start()
+{
     // Start WPS if WiFi is not configured, or reconfiguration was requested
     bool reconfigure = (xEventGroupGetBits(device_state) & STATE_BIT_RECONFIGURE) != 0;
     if (!wifi_reconnect_is_ssid_stored() || reconfigure)
