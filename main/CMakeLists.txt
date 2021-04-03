@@ -14,6 +14,6 @@ idf_component_register(
         status_led
         wps_config
         wifi_reconnect
+        rapidjson
+        config_state
 )
-
-target_link_libraries(${COMPONENT_LIB} PUBLIC wifi_reconnect)
