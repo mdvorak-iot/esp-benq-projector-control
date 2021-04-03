@@ -13,3 +13,15 @@
 [submodule "wifi_reconnect"]
 	path = components/wifi_reconnect
 	url = https://github.com/mdvorak-iot/esp-wifi-reconnect.git
+
+[submodule "config_state"]
+	path = components/config_state
+	url = https://github.com/mdvorak-iot/esp-config-state.git
+
+[submodule "rapidjson"]
+	path = components/rapidjson/rapidjson
+	url = https://github.com/Tencent/rapidjson
+
+[submodule "aws_iot_shadow"]
+	path = components/aws_iot_shadow
+	url = https://github.com/mdvorak-iot/esp-aws-iot-shadow.git

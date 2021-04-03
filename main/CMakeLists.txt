@@ -15,3 +15,5 @@ idf_component_register(
         wps_config
         wifi_reconnect
 )
+
+target_link_libraries(${COMPONENT_LIB} PUBLIC wifi_reconnect)
