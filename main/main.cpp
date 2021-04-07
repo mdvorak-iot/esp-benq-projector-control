@@ -19,7 +19,7 @@ static aws_iot_shadow_handle_ptr shadow_handle = nullptr;
 static void setup_init();
 static void setup_devices();
 extern "C" void setup_wifi(const char *hostname);
-extern "C" void setup_wifi_start();
+extern "C" void setup_wifi_connect();
 extern "C" void setup_aws_iot(esp_mqtt_client_handle_t *out_mqtt_client, aws_iot_shadow_handle_ptr *out_shadow_client);
 extern "C" void setup_status_led(gpio_num_t status_led_pin, bool status_led_on_state, aws_iot_shadow_handle_ptr shadow_handle, status_led_handle_ptr *out_status_led);
 
@@ -34,7 +34,7 @@ extern "C" void app_main()
     setup_wifi(app_info.project_name);
     setup_aws_iot(&mqtt_client, &shadow_handle);
     setup_status_led(config.status_led_pin, config.status_led_on_state, shadow_handle, &status_led);
-    setup_wifi_start(); // this should be last
+    setup_wifi_connect(); // this should be last
     ESP_LOGI(TAG, "started %s %s", app_info.project_name, app_info.version);
 
     // Run
