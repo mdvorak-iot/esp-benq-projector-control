@@ -6,7 +6,7 @@
 static const char TAG[] = "setup_status_led";
 
 static const uint32_t STATUS_LED_CONNECTING_INTERVAL = 500u;
-static const uint32_t STATUS_LED_WPS_INTERVAL = 100u;
+static const uint32_t STATUS_LED_PROV_INTERVAL = 100u;
 static const uint32_t STATUS_LED_READY_INTERVAL = 100u;
 static const uint32_t STATUS_LED_READY_COUNT = 3;
 
@@ -22,7 +22,7 @@ static void wps_event_handler(__unused void *handler_arg, esp_event_base_t event
     }
     else if (event_base == WPS_CONFIG_EVENT && event_id == WPS_CONFIG_EVENT_START)
     {
-        status_led_set_interval(status_led, STATUS_LED_WPS_INTERVAL, true);
+        status_led_set_interval(status_led, STATUS_LED_PROV_INTERVAL, true);
     }
 }
 
