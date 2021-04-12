@@ -9,7 +9,7 @@ extern "C" {
 
 void app_wifi_init(const char *hostname);
 
-void app_wifi_connect(bool reconfigure);
+void app_wifi_start(bool reconfigure);
 
 #ifdef __cplusplus
 }

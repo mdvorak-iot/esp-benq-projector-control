@@ -7,6 +7,8 @@
 
 static const char TAG[] = "app_main";
 
+static const char RAINMAKER_DEVICE_TYPE[] = "esp.device.custom";
+
 // Global state
 void app_services_init(esp_rmaker_node_t *node);
 
@@ -40,10 +42,10 @@ void app_main()
     esp_rmaker_config_t rainmaker_cfg = {
         .enable_time_sync = true,
     };
-    esp_rmaker_node_t *node = esp_rmaker_node_init(&rainmaker_cfg, app_info.project_name, "custom");
+    esp_rmaker_node_t *node = esp_rmaker_node_init(&rainmaker_cfg, app_info.project_name, RAINMAKER_DEVICE_TYPE);
     if (!node)
     {
-        ESP_LOGE(TAG, "Could not initialize node. Aborting!!!");
+        ESP_LOGE(TAG, "could not initialize node, aborting!!!");
         vTaskDelay(5000 / portTICK_PERIOD_MS);
         abort();
     }
@@ -52,7 +54,7 @@ void app_main()
 
     // Start
     esp_rmaker_start();
-    app_wifi_connect(reconfigure);
+    app_wifi_start(reconfigure);
 
     // Run
     ESP_LOGI(TAG, "life is good");

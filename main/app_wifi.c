@@ -86,12 +86,43 @@ static void wifi_prov_event_handler(__unused void *arg, __unused esp_event_base_
     }
 }
 
+static esp_err_t get_device_pop(char *pop, size_t max)
+{
+    if (!pop)
+    {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    uint8_t eth_mac[6];
+    esp_err_t err = esp_wifi_get_mac(WIFI_IF_STA, eth_mac);
+    if (err == ESP_OK)
+    {
+        snprintf(pop, max, "%02x%02x%02x%02x", eth_mac[2], eth_mac[3], eth_mac[4], eth_mac[5]);
+        return ESP_OK;
+    }
+    return err;
+}
+
+static void app_wifi_print_qr(const char *name, const char *pop, const char *transport)
+{
+    if (!name || !pop || !transport)
+    {
+        ESP_LOGW(TAG, "Cannot generate QR code payload. Data missing.");
+        return;
+    }
+    char payload[200];
+    // {"ver":"%s","name":"%s","pop":"%s","transport":"%s"}
+    snprintf(payload, sizeof(payload), "%%7B%%22ver%%22%%3A%%22%s%%22%%2C%%22name%%22%%3A%%22%s%%22%%2C%%22pop%%22%%3A%%22%s%%22%%2C%%22transport%%22%%3A%%22%s%%22%%7D",
+             "v1", name, pop, transport);
+    ESP_LOGI(TAG, "To view QR Code, copy paste the below URL in a browser:\n%s?data=%s", "https://rainmaker.espressif.com/qrcode.html", payload);
+}
+
 void app_wifi_init(const char *hostname)
 {
     // Initialize WiFi
     ESP_ERROR_CHECK(esp_netif_init());
-    esp_netif_t *sta_netif = esp_netif_create_default_wifi_sta();
-    assert(sta_netif);
+    esp_netif_create_default_wifi_sta();
+
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
     ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_FLASH));
@@ -104,6 +135,12 @@ void app_wifi_init(const char *hostname)
     // Note: This is needed, since wifi stack is unable to re-read correct config from NVS after provisioning for some reason
     ESP_ERROR_CHECK(esp_wifi_get_config(ESP_IF_WIFI_STA, &startup_wifi_config));
 
+    // Listen for events
+    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_PROV_EVENT, ESP_EVENT_ANY_ID, &wifi_prov_event_handler, NULL));
+}
+
+void app_wifi_start(bool reconfigure)
+{
     // Initialize provisioning
     wifi_prov_mgr_config_t wifi_prof_cfg = {
 #if APP_WIFI_PROV_TYPE_BLE
@@ -114,13 +151,9 @@ void app_wifi_init(const char *hostname)
         .scheme_event_handler = WIFI_PROV_EVENT_HANDLER_NONE,
 #endif
     };
-    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_PROV_EVENT, ESP_EVENT_ANY_ID, &wifi_prov_event_handler, NULL));
     ESP_ERROR_CHECK(wifi_prov_mgr_init(wifi_prof_cfg));
-}
 
-void app_wifi_connect(bool reconfigure)
-{
-    // Provisioning mode
+    // Detect provisioning mode
     bool provisioned = false;
     ESP_ERROR_CHECK(wifi_prov_mgr_is_provisioned(&provisioned));
 
@@ -132,11 +165,18 @@ void app_wifi_connect(bool reconfigure)
         const char *hostname = NULL;
         ESP_ERROR_CHECK_WITHOUT_ABORT(tcpip_adapter_get_hostname(TCPIP_ADAPTER_IF_STA, &hostname));
 
+        // Service name
         char service_name[65] = {}; // Note: only first 29 chars will be probably broadcast
         snprintf(service_name, sizeof(service_name), "PROV_%s", hostname);
         ESP_LOGI(TAG, "service name: %s", service_name);
 
-        ESP_ERROR_CHECK(wifi_prov_mgr_start_provisioning(WIFI_PROV_SECURITY_1, NULL, service_name, NULL));
+        // Proof of possession
+        // NOTE this uses atm MAC, which is stable, and QR code can be printed on the device
+        char pop[9] = {};
+        ESP_ERROR_CHECK_WITHOUT_ABORT(get_device_pop(pop, sizeof(pop)));
+
+        // Start
+        ESP_ERROR_CHECK(wifi_prov_mgr_start_provisioning(WIFI_PROV_SECURITY_1, pop, service_name, NULL));
 
         esp_timer_create_args_t args = {
             .callback = wifi_prov_timeout_handler,
@@ -144,6 +184,13 @@ void app_wifi_connect(bool reconfigure)
         };
         ESP_ERROR_CHECK(esp_timer_create(&args, &wifi_prov_timeout_timer));
         ESP_ERROR_CHECK(esp_timer_start_once(wifi_prov_timeout_timer, APP_WIFI_PROV_TIMEOUT_S * 1000000));
+
+        // QR code
+#if APP_WIFI_PROV_TYPE_BLE
+        app_wifi_print_qr(service_name, pop, "ble");
+#elif APP_WIFI_PROV_TYPE_SOFT_AP
+        app_wifi_print_qr(service_name, pop, "softap");
+#endif
     }
     else
     {
