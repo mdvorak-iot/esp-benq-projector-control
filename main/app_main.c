@@ -3,11 +3,12 @@
 #include <esp_log.h>
 #include <esp_ota_ops.h>
 #include <esp_rmaker_core.h>
+#include <esp_rmaker_schedule.h>
 #include <nvs_flash.h>
 
 static const char TAG[] = "app_main";
 
-static const char RAINMAKER_DEVICE_TYPE[] = "esp.device.custom";
+static const char RAINMAKER_NODE_TYPE[] = "Template";
 
 // Global state
 void app_services_init(esp_rmaker_node_t *node);
@@ -42,7 +43,7 @@ void app_main()
     esp_rmaker_config_t rainmaker_cfg = {
         .enable_time_sync = true,
     };
-    esp_rmaker_node_t *node = esp_rmaker_node_init(&rainmaker_cfg, app_info.project_name, RAINMAKER_DEVICE_TYPE);
+    esp_rmaker_node_t *node = esp_rmaker_node_init(&rainmaker_cfg, app_info.project_name, RAINMAKER_NODE_TYPE);
     if (!node)
     {
         ESP_LOGE(TAG, "could not initialize node, aborting!!!");
@@ -53,6 +54,7 @@ void app_main()
     app_services_init(node);
 
     // Start
+    esp_rmaker_schedule_enable();
     esp_rmaker_start();
     app_wifi_start(reconfigure);
 

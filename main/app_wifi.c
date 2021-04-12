@@ -103,6 +103,7 @@ static esp_err_t get_device_pop(char *pop, size_t max)
     return err;
 }
 
+// TODO this should be outside wifi provisioning code, but it needs pop
 static void app_wifi_print_qr(const char *name, const char *pop, const char *transport)
 {
     if (!name || !pop || !transport)
