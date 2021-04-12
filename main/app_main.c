@@ -4,6 +4,7 @@
 #include <esp_ota_ops.h>
 #include <esp_rmaker_core.h>
 #include <esp_rmaker_schedule.h>
+#include <esp_rmaker_standard_types.h>
 #include <nvs_flash.h>
 
 static const char TAG[] = "app_main";
@@ -65,4 +66,12 @@ void app_main()
 void app_services_init(esp_rmaker_node_t *node)
 {
     // Register buttons, sensors, etc
+    esp_rmaker_device_t *fan_device = esp_rmaker_device_create("Fan", ESP_RMAKER_DEVICE_FAN, NULL);
+
+    esp_rmaker_param_t *fan_rpm_param = esp_rmaker_param_create("Speed", ESP_RMAKER_PARAM_SPEED, esp_rmaker_float(0.5f), PROP_FLAG_READ | PROP_FLAG_WRITE | PROP_FLAG_PERSIST);
+    esp_rmaker_param_add_ui_type(fan_rpm_param, ESP_RMAKER_UI_SLIDER);
+    esp_rmaker_param_add_bounds(fan_rpm_param, esp_rmaker_float(0.0f), esp_rmaker_float(1.0f), esp_rmaker_float(0.05f));
+    esp_rmaker_device_add_param(fan_device, fan_rpm_param);
+
+    esp_rmaker_node_add_device(node, fan_device);
 }
