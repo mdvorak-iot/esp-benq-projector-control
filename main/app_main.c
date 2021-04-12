@@ -3,6 +3,7 @@
 #include <esp_log.h>
 #include <esp_ota_ops.h>
 #include <esp_rmaker_core.h>
+#include <esp_rmaker_ota.h>
 #include <esp_rmaker_schedule.h>
 #include <esp_rmaker_standard_types.h>
 #include <nvs_flash.h>
@@ -53,6 +54,12 @@ void app_main()
     }
 
     app_services_init(node);
+
+    // Enable OTA
+    esp_rmaker_ota_config_t ota_config = {
+        .server_cert = (char *)ESP_RMAKER_OTA_DEFAULT_SERVER_CERT,
+    };
+    esp_rmaker_ota_enable(&ota_config, OTA_USING_TOPICS);
 
     // Start
     esp_rmaker_schedule_enable();
