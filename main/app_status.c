@@ -46,11 +46,11 @@ static void wifi_prov_handler(__unused void *handler_arg, __unused esp_event_bas
     }
 }
 
-void app_status_init(gpio_num_t status_led_pin, bool status_led_on_state)
+void app_status_init()
 {
     // Status LED
     status_led_handle_ptr status_led = NULL;
-    esp_err_t err = status_led_create(status_led_pin, status_led_on_state, &status_led);
+    esp_err_t err = status_led_create_default(&status_led);
     if (err == ESP_OK)
     {
         ESP_ERROR_CHECK_WITHOUT_ABORT(status_led_set_interval(status_led, STATUS_LED_CONNECTING_INTERVAL, true));
@@ -61,6 +61,6 @@ void app_status_init(gpio_num_t status_led_pin, bool status_led_on_state)
     }
     else
     {
-        ESP_LOGE(TAG, "failed to create status_led on pin %d: %d %s", status_led_pin, err, esp_err_to_name(err));
+        ESP_LOGE(TAG, "failed to create status_led on pin %d: %d %s", STATUS_LED_DEFAULT_GPIO, err, esp_err_to_name(err));
     }
 }

@@ -1,3 +1,5 @@
+#include "../rainmaker/components/esp_rainmaker/src/core/esp_rmaker_internal.h"
+#include "app_status.h"
 #include "app_wifi.h"
 #include <double_reset.h>
 #include <esp_log.h>
@@ -5,15 +7,20 @@
 #include <esp_rmaker_core.h>
 #include <esp_rmaker_ota.h>
 #include <esp_rmaker_schedule.h>
+#include <esp_rmaker_standard_params.h>
 #include <esp_rmaker_standard_types.h>
 #include <nvs_flash.h>
+#include <string.h>
 
 static const char TAG[] = "app_main";
 
-static const char RAINMAKER_NODE_TYPE[] = "Template";
+#define RAINMAKER_NODE_TYPE "Template"
 
 // Global state
-void app_services_init(esp_rmaker_node_t *node);
+static void app_services_init(esp_rmaker_node_t *node, const char *default_name);
+static esp_err_t device_write_cb(__unused const esp_rmaker_device_t *device, const esp_rmaker_param_t *param,
+                                 esp_rmaker_param_val_t val, __unused void *private_data,
+                                 __unused esp_rmaker_write_ctx_t *ctx);
 
 void app_main()
 {
@@ -39,7 +46,7 @@ void app_main()
     ESP_ERROR_CHECK_WITHOUT_ABORT(esp_ota_get_partition_description(esp_ota_get_running_partition(), &app_info));
 
     // Setup
-    // void app_status_init(status_led_pin, status_led_on_state); // TODO
+    app_status_init();
     app_wifi_init(app_info.project_name);
 
     esp_rmaker_config_t rainmaker_cfg = {
@@ -53,7 +60,7 @@ void app_main()
         abort();
     }
 
-    app_services_init(node);
+    app_services_init(node, app_info.project_name);
 
     // Enable OTA
     esp_rmaker_ota_config_t ota_config = {
@@ -70,15 +77,32 @@ void app_main()
     ESP_LOGI(TAG, "life is good");
 }
 
-void app_services_init(esp_rmaker_node_t *node)
+static void app_services_init(esp_rmaker_node_t *node, const char *default_name)
 {
-    // Register buttons, sensors, etc
-    esp_rmaker_device_t *fan_device = esp_rmaker_device_create("Fan", ESP_RMAKER_DEVICE_FAN, NULL);
+    // Prepare device
+    esp_rmaker_device_t *device = esp_rmaker_device_create("Fan", ESP_RMAKER_DEVICE_FAN, NULL);
+    assert(device);
 
+    esp_rmaker_device_add_cb(device, device_write_cb, NULL);
+    esp_rmaker_device_add_param(device, esp_rmaker_name_param_create(ESP_RMAKER_DEF_NAME_PARAM, default_name));
+    esp_rmaker_node_add_device(node, device);
+
+    // Register buttons, sensors, etc
     esp_rmaker_param_t *fan_rpm_param = esp_rmaker_param_create("Speed", ESP_RMAKER_PARAM_SPEED, esp_rmaker_float(0.5f), PROP_FLAG_READ | PROP_FLAG_WRITE | PROP_FLAG_PERSIST);
     esp_rmaker_param_add_ui_type(fan_rpm_param, ESP_RMAKER_UI_SLIDER);
     esp_rmaker_param_add_bounds(fan_rpm_param, esp_rmaker_float(0.0f), esp_rmaker_float(1.0f), esp_rmaker_float(0.05f));
-    esp_rmaker_device_add_param(fan_device, fan_rpm_param);
+    esp_rmaker_device_add_param(device, fan_rpm_param);
+}
 
-    esp_rmaker_node_add_device(node, fan_device);
+static esp_err_t device_write_cb(__unused const esp_rmaker_device_t *device, const esp_rmaker_param_t *param,
+                                 const esp_rmaker_param_val_t val, __unused void *private_data,
+                                 __unused esp_rmaker_write_ctx_t *ctx)
+{
+    //    char *param_name = esp_rmaker_param_get_name(param);
+    //    if (strcmp(param_name, "TODO") == 0)
+    //    {
+    //        // TODO handle
+    //        esp_rmaker_param_update_and_report(param, val);
+    //    }
+    return ESP_OK;
 }
