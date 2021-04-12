@@ -1,4 +1,3 @@
-# For 4MB flash
 # Name,   Type, SubType, Offset,    Size,  Flags
 sec_cert, 0x3F, ,        0xd000,    0x3000,
 nvs,      data, nvs,     0x10000,   0x6000,
