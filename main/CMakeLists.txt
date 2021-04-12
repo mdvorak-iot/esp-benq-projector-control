@@ -10,12 +10,9 @@ idf_component_register(
         esp32
         esp_wifi
         app_update
+        wifi_provisioning
+        esp_rainmaker
         double_reset
         status_led
-        wps_config
         wifi_reconnect
-        rapidjson
-        config_state
-        aws_iot_mqtt_config
-        aws_iot_shadow
 )

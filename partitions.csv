@@ -1,8 +1,9 @@
-# ESP-IDF Partition Table
 # For 4MB flash
-# Name,   Type, SubType, Offset,  Size,  Flags
-nvs,      data, nvs,     0x9000,  0x4000
-otadata,  data, ota,     0xd000,  0x2000
-phy_init, data, phy,     0xf000,  0x1000
-ota_0,    app,  ota_0,   0x10000, 1536K
-ota_1,    app,  ota_1,          , 1536K
+# Name,   Type, SubType, Offset,    Size,  Flags
+sec_cert, 0x3F, ,        0xd000,    0x3000,
+nvs,      data, nvs,     0x10000,   0x6000,
+otadata,  data, ota,     ,          0x2000,
+phy_init, data, phy,     ,          0x1000,
+ota_0,    app,  ota_0,   0x20000,   1600K,
+ota_1,    app,  ota_1,   ,          1600K,
+fctry,    data, nvs,     0x340000,  0x6000,
