@@ -1,6 +1,7 @@
 #include <esp_event.h>
 #include <esp_log.h>
 #include <esp_rmaker_common_events.h>
+#include <freertos/event_groups.h>
 #include <status_led.h>
 #include <wifi_provisioning/manager.h>
 #include <wifi_reconnect.h>
@@ -12,11 +13,18 @@ static const uint32_t STATUS_LED_PROV_INTERVAL = 100u;
 static const uint32_t STATUS_LED_READY_INTERVAL = 100u;
 static const uint32_t STATUS_LED_READY_COUNT = 3;
 
+static EventGroupHandle_t event_group = NULL;
+
+#define MQTT_CONNECTED_BIT BIT0
+
 static void connected_handler(__unused void *handler_arg, __unused esp_event_base_t event_base,
                               __unused int32_t event_id, __unused void *event_data)
 {
-    status_led_handle_ptr status_led = (status_led_handle_ptr)handler_arg;
+    // State
+    xEventGroupSetBits(event_group, MQTT_CONNECTED_BIT);
 
+    // LED
+    status_led_handle_ptr status_led = (status_led_handle_ptr)handler_arg;
     uint32_t timeout_ms = STATUS_LED_READY_INTERVAL * STATUS_LED_READY_COUNT * 2;
     status_led_set_interval_for(status_led, STATUS_LED_READY_INTERVAL, false, timeout_ms, false);
 }
@@ -24,6 +32,10 @@ static void connected_handler(__unused void *handler_arg, __unused esp_event_bas
 static void disconnected_handler(__unused void *handler_arg, __unused esp_event_base_t event_base,
                                  __unused int32_t event_id, __unused void *event_data)
 {
+    // State
+    xEventGroupClearBits(event_group, MQTT_CONNECTED_BIT);
+
+    // LED
     status_led_handle_ptr status_led = (status_led_handle_ptr)handler_arg;
     status_led_set_interval(status_led, STATUS_LED_CONNECTING_INTERVAL, true);
 }
@@ -39,12 +51,18 @@ static void wifi_prov_handler(__unused void *handler_arg, __unused esp_event_bas
     }
     else if (event_id == WIFI_PROV_END)
     {
-        status_led_set_interval(status_led, STATUS_LED_CONNECTING_INTERVAL, true);
+        // If not already connected
+        if ((xEventGroupGetBits(event_group) & MQTT_CONNECTED_BIT) == 0)
+        {
+            status_led_set_interval(status_led, STATUS_LED_CONNECTING_INTERVAL, true);
+        }
     }
 }
 
 void app_status_init()
 {
+    event_group = xEventGroupCreate();
+
     // Status LED
     esp_err_t err = status_led_create_default();
     if (err == ESP_OK)
