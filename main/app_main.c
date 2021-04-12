@@ -1,4 +1,3 @@
-#include "../rainmaker/components/esp_rainmaker/src/core/esp_rmaker_internal.h"
 #include "app_status.h"
 #include "app_wifi.h"
 #include <double_reset.h>

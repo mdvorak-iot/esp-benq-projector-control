@@ -12,6 +12,7 @@ idf_component_register(
         app_update
         wifi_provisioning
         esp_rainmaker
+        rmaker_common
         double_reset
         status_led
         wifi_reconnect
