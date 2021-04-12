@@ -16,4 +16,5 @@ idf_component_register(
         double_reset
         status_led
         wifi_reconnect
+        app_wifi
 )

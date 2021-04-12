@@ -13,3 +13,7 @@
 [submodule "rainmaker"]
 	path = rainmaker
 	url = https://github.com/espressif/esp-rainmaker.git
+
+[submodule "app_wifi"]
+	path = components/app_wifi
+	url = https://github.com/mdvorak-iot/esp-app-wifi.git
