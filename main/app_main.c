@@ -82,12 +82,12 @@ void app_main()
     esp_rmaker_ota_config_t ota_config = {
         .server_cert = (char *)ESP_RMAKER_OTA_DEFAULT_SERVER_CERT,
     };
-    esp_rmaker_ota_enable(&ota_config, OTA_USING_TOPICS);
+    ESP_ERROR_CHECK(esp_rmaker_ota_enable(&ota_config, OTA_USING_TOPICS));
 
     // Start
-    esp_rmaker_schedule_enable();
-    esp_rmaker_start();
-    app_wifi_start(reconfigure);
+    ESP_ERROR_CHECK(esp_rmaker_schedule_enable());
+    ESP_ERROR_CHECK(esp_rmaker_start());
+    ESP_ERROR_CHECK(app_wifi_start(reconfigure));
 
     // Run
     ESP_LOGI(TAG, "life is good");
