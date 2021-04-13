@@ -54,8 +54,8 @@ void app_main()
 
     struct app_wifi_config wifi_cfg = {
         .security = WIFI_PROV_SECURITY_1,
-        .hostname = app_info.project_name,
         .service_name = app_info.project_name,
+        .hostname = app_info.project_name,
         .wifi_connect = wifi_reconnect_resume,
     };
     ESP_ERROR_CHECK(app_wifi_init(&wifi_cfg));
