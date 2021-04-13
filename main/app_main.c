@@ -121,10 +121,6 @@ static void app_services_init(esp_rmaker_node_t *node, const char *default_name)
     esp_rmaker_node_add_device(node, device);
 
     // Register buttons, sensors, etc
-    esp_rmaker_param_t *fan_rpm_param = esp_rmaker_param_create("Speed", ESP_RMAKER_PARAM_SPEED, esp_rmaker_float(0.5f), PROP_FLAG_READ | PROP_FLAG_WRITE | PROP_FLAG_PERSIST);
-    esp_rmaker_param_add_ui_type(fan_rpm_param, ESP_RMAKER_UI_SLIDER);
-    esp_rmaker_param_add_bounds(fan_rpm_param, esp_rmaker_float(0.0f), esp_rmaker_float(1.0f), esp_rmaker_float(0.05f));
-    esp_rmaker_device_add_param(device, fan_rpm_param);
 }
 
 static esp_err_t device_write_cb(__unused const esp_rmaker_device_t *device, const esp_rmaker_param_t *param,
