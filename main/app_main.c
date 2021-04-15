@@ -116,9 +116,9 @@ static void app_services_init(esp_rmaker_node_t *node, const char *default_name)
     esp_rmaker_device_t *device = esp_rmaker_device_create("Fan", ESP_RMAKER_DEVICE_FAN, NULL);
     assert(device);
 
-    esp_rmaker_device_add_cb(device, device_write_cb, NULL);
-    esp_rmaker_device_add_param(device, esp_rmaker_name_param_create(ESP_RMAKER_DEF_NAME_PARAM, default_name));
-    esp_rmaker_node_add_device(node, device);
+    ESP_ERROR_CHECK(esp_rmaker_device_add_cb(device, device_write_cb, NULL));
+    ESP_ERROR_CHECK(esp_rmaker_device_add_param(device, esp_rmaker_name_param_create(ESP_RMAKER_DEF_NAME_PARAM, default_name)));
+    ESP_ERROR_CHECK(esp_rmaker_node_add_device(node, device));
 
     // Register buttons, sensors, etc
 }
