@@ -16,10 +16,12 @@
 
 #define APP_DEVICE_NAME CONFIG_APP_DEVICE_NAME
 #define APP_DEVICE_TYPE CONFIG_APP_DEVICE_TYPE
+#define APP_PARAM_BLANK "Blank"
 
 static const char TAG[] = "app_main";
 
 static esp_rmaker_param_t *power_param = NULL;
+static esp_rmaker_param_t *blank_param = NULL;
 
 // Program
 static void app_devices_init(esp_rmaker_node_t *node);
@@ -98,6 +100,8 @@ static void connected_handler(__unused void *handler_arg, __unused esp_event_bas
     // Report state
     bool power = false; // TODO read
     esp_rmaker_param_update_and_report(power_param, esp_rmaker_bool(power));
+
+    esp_rmaker_param_update_and_report(blank_param, esp_rmaker_bool(false));
 }
 
 static esp_err_t device_write_cb(__unused const esp_rmaker_device_t *device, const esp_rmaker_param_t *param,
@@ -110,6 +114,14 @@ static esp_err_t device_write_cb(__unused const esp_rmaker_device_t *device, con
     if (strcmp(param_name, ESP_RMAKER_PARAM_POWER) == 0)
     {
         // TODO handle
+
+        // Blank is possible only when powered on
+        if (!val.val.b)
+        {
+            esp_rmaker_param_update_and_report(blank_param, esp_rmaker_bool(false));
+        }
+
+        // Report
         return esp_rmaker_param_update_and_report(param, val);
     }
 
@@ -132,4 +144,8 @@ static void app_devices_init(esp_rmaker_node_t *node)
     power_param = esp_rmaker_param_create(ESP_RMAKER_DEF_POWER_NAME, ESP_RMAKER_PARAM_POWER, esp_rmaker_bool(false), PROP_FLAG_READ | PROP_FLAG_WRITE);
     esp_rmaker_param_add_ui_type(power_param, ESP_RMAKER_UI_TOGGLE);
     ESP_ERROR_CHECK(esp_rmaker_device_add_param(device, power_param));
+
+    blank_param = esp_rmaker_param_create(APP_PARAM_BLANK, ESP_RMAKER_PARAM_POWER, esp_rmaker_bool(false), PROP_FLAG_READ | PROP_FLAG_WRITE);
+    esp_rmaker_param_add_ui_type(blank_param, ESP_RMAKER_UI_TOGGLE);
+    ESP_ERROR_CHECK(esp_rmaker_device_add_param(device, blank_param));
 }
