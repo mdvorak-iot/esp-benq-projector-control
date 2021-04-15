@@ -1,6 +1,7 @@
 #include "benq_proj.h"
 #include <driver/uart.h>
 #include <esp_log.h>
+#include <string.h>
 
 static const char TAG[] = "benq_proj";
 
@@ -76,12 +77,13 @@ esp_err_t benq_proj_init(const struct benq_proj_config *cfg)
     ESP_ERROR_CHECK(uart_driver_install(cfg->uart_port, BENQ_PROJ_UART_BUFFER_SIZE, BENQ_PROJ_UART_BUFFER_SIZE, BENQ_PROJ_UART_QUEUE_SIZE, &event_queue, 0));
 
     // TODO malloc
-    struct benq_proj_context ctx = {
-        .uart_port = cfg->uart_port,
-        .event_queue = event_queue,
-    };
+    struct benq_proj_context *ctx = malloc(sizeof(*ctx));
+    memset(ctx, 0, sizeof(*ctx));
+    ctx->uart_port = cfg->uart_port;
+    ctx->event_queue = event_queue;
 
     // TODO
+    xTaskCreate(benq_proj_task, "benq_proj", 1024, ctx, 1, NULL);
 
     return ESP_OK;
 }

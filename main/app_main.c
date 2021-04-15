@@ -5,6 +5,7 @@
 #include <double_reset.h>
 #include <driver/uart.h>
 #include <esp_log.h>
+#include <esp_rmaker_common_events.h>
 #include <esp_rmaker_core.h>
 #include <esp_rmaker_standard_params.h>
 #include <esp_rmaker_standard_types.h>
@@ -13,10 +14,17 @@
 #include <string.h>
 #include <wifi_reconnect.h>
 
+#define APP_DEVICE_NAME CONFIG_APP_DEVICE_NAME
+#define APP_DEVICE_TYPE CONFIG_APP_DEVICE_TYPE
+
 static const char TAG[] = "app_main";
+
+static esp_rmaker_param_t *power_param = NULL;
 
 // Program
 static void app_devices_init(esp_rmaker_node_t *node);
+static void connected_handler(__unused void *handler_arg, __unused esp_event_base_t event_base,
+                              __unused int32_t event_id, __unused void *event_data);
 
 void setup()
 {
@@ -55,6 +63,7 @@ void setup()
     // RainMaker
     esp_rmaker_node_t *node = NULL;
     ESP_ERROR_CHECK(app_rmaker_init(node_name, &node));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(RMAKER_COMMON_EVENT, RMAKER_MQTT_EVENT_CONNECTED, connected_handler, node, NULL));
 
     app_devices_init(node);
 
@@ -83,23 +92,34 @@ void app_main()
     ESP_LOGI(TAG, "life is good");
 }
 
+static void connected_handler(__unused void *handler_arg, __unused esp_event_base_t event_base,
+                              __unused int32_t event_id, __unused void *event_data)
+{
+    // Report state
+    bool power = false; // TODO read
+    esp_rmaker_param_update_and_report(power_param, esp_rmaker_bool(power));
+}
+
 static esp_err_t device_write_cb(__unused const esp_rmaker_device_t *device, const esp_rmaker_param_t *param,
                                  const esp_rmaker_param_val_t val, __unused void *private_data,
                                  __unused esp_rmaker_write_ctx_t *ctx)
 {
-    //    char *param_name = esp_rmaker_param_get_name(param);
-    //    if (strcmp(param_name, "TODO") == 0)
-    //    {
-    //        // TODO handle
-    //        esp_rmaker_param_update_and_report(param, val);
-    //    }
+    char *param_name = esp_rmaker_param_get_name(param);
+
+    // Power
+    if (strcmp(param_name, ESP_RMAKER_PARAM_POWER) == 0)
+    {
+        // TODO handle
+        return esp_rmaker_param_update_and_report(param, val);
+    }
+
     return ESP_OK;
 }
 
 static void app_devices_init(esp_rmaker_node_t *node)
 {
     // Prepare device
-    esp_rmaker_device_t *device = esp_rmaker_device_create("Fan", ESP_RMAKER_DEVICE_FAN, NULL);
+    esp_rmaker_device_t *device = esp_rmaker_device_create(APP_DEVICE_NAME, APP_DEVICE_TYPE, NULL);
     assert(device);
 
     ESP_ERROR_CHECK(esp_rmaker_device_add_cb(device, device_write_cb, NULL));
@@ -109,4 +129,7 @@ static void app_devices_init(esp_rmaker_node_t *node)
     ESP_ERROR_CHECK(esp_rmaker_node_add_device(node, device));
 
     // Register buttons, sensors, etc
+    power_param = esp_rmaker_param_create(ESP_RMAKER_DEF_POWER_NAME, ESP_RMAKER_PARAM_POWER, esp_rmaker_bool(false), PROP_FLAG_READ | PROP_FLAG_WRITE);
+    esp_rmaker_param_add_ui_type(power_param, ESP_RMAKER_UI_TOGGLE);
+    ESP_ERROR_CHECK(esp_rmaker_device_add_param(device, power_param));
 }

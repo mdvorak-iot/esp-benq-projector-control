@@ -1,4 +1,12 @@
 menu "Application config"
+    config APP_DEVICE_NAME
+        string "RainMaker device name"
+        default "BenQ Projector"
+
+    config APP_DEVICE_TYPE
+        string "RainMaker device type"
+        default "esp.device.projector"
+
     config APP_PROJ_UART_BAUD
         int "Projector serial baud"
         default 115200
