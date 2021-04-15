@@ -50,12 +50,8 @@ void setup()
     // Setup
     app_status_init();
 
-    char node_name[APP_RMAKER_NODE_NAME_LEN] = {};
-    ESP_ERROR_CHECK(app_rmaker_node_name(node_name, sizeof(node_name)));
-
     struct app_wifi_config wifi_cfg = {
         .security = WIFI_PROV_SECURITY_1,
-        .hostname = node_name,
         .wifi_connect = wifi_reconnect_resume,
     };
     ESP_ERROR_CHECK(app_wifi_init(&wifi_cfg));
@@ -63,6 +59,9 @@ void setup()
     ESP_ERROR_CHECK(wifi_reconnect_start());
 
     // RainMaker
+    char node_name[APP_RMAKER_NODE_NAME_LEN] = {};
+    ESP_ERROR_CHECK(app_rmaker_node_name(node_name, sizeof(node_name)));
+
     esp_rmaker_node_t *node = NULL;
     ESP_ERROR_CHECK(app_rmaker_init(node_name, &node));
     ESP_ERROR_CHECK(esp_event_handler_instance_register(RMAKER_COMMON_EVENT, RMAKER_MQTT_EVENT_CONNECTED, connected_handler, node, NULL));
@@ -79,6 +78,7 @@ void setup()
     ESP_ERROR_CHECK(benq_proj_init(&proj_cfg));
 
     // Start
+    ESP_ERROR_CHECK(tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, node_name)); // NOTE this wasn't available before during WiFi init
     ESP_ERROR_CHECK(esp_rmaker_start());
     ESP_ERROR_CHECK(app_wifi_start(reconfigure));
 
@@ -101,7 +101,7 @@ static void connected_handler(__unused void *handler_arg, __unused esp_event_bas
     bool power = false; // TODO read
     esp_rmaker_param_update_and_report(power_param, esp_rmaker_bool(power));
 
-    esp_rmaker_param_update_and_report(blank_param, esp_rmaker_bool(false));
+    esp_rmaker_param_update_and_report(blank_param, esp_rmaker_bool(false)); // TODO
 }
 
 static esp_err_t device_write_cb(__unused const esp_rmaker_device_t *device, const esp_rmaker_param_t *param,
