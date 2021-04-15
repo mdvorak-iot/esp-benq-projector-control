@@ -1,3 +1,4 @@
+#include "app_rainmaker.h"
 #include <app_wifi.h>
 #include <app_wifi_defs.h>
 #include <esp_log.h>
@@ -27,10 +28,8 @@ static void print_qrcode_handler(__unused void *arg, __unused esp_event_base_t e
     ESP_LOGI(TAG, "To view QR Code, copy paste the URL in a browser:\n%s?data=%s", "https://rainmaker.espressif.com/qrcode.html", payload);
 }
 
-esp_err_t app_rmaker_init(esp_rmaker_node_t **out_node)
+esp_err_t app_rmaker_node_name(char *node_name, size_t node_name_len)
 {
-    esp_err_t err = ESP_OK;
-
     // App info
     esp_app_desc_t app_info = {};
     esp_ota_get_partition_description(esp_ota_get_running_partition(), &app_info);
@@ -39,8 +38,17 @@ esp_err_t app_rmaker_init(esp_rmaker_node_t **out_node)
     uint8_t eth_mac[6] = {};
     esp_wifi_get_mac(WIFI_IF_STA, eth_mac);
 
-    char node_name[sizeof(app_info.project_name) + 5] = {};
-    snprintf(node_name, sizeof(node_name), "%s-%02x%02x", app_info.project_name, eth_mac[0], eth_mac[1]);
+    snprintf(node_name, node_name_len, "%s-%02x%02x", app_info.project_name, eth_mac[0], eth_mac[1]);
+    return ESP_OK;
+}
+
+esp_err_t app_rmaker_init(const char *node_name, esp_rmaker_node_t **out_node)
+{
+    esp_err_t err = ESP_OK;
+
+    // App info
+    esp_app_desc_t app_info = {};
+    esp_ota_get_partition_description(esp_ota_get_running_partition(), &app_info);
 
     // Create node
     esp_rmaker_config_t cfg = {
