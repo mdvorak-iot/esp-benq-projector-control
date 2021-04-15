@@ -16,15 +16,27 @@
 
 static const char TAG[] = "app_main";
 
-#define RAINMAKER_NODE_TYPE "Template"
-
 // Global state
-static void app_services_init(esp_rmaker_node_t *node, const char *default_name);
+static void app_services_init(esp_rmaker_node_t *node);
 static void print_qrcode_handler(__unused void *arg, __unused esp_event_base_t event_base,
                                  __unused int32_t event_id, __unused void *event_data);
 static esp_err_t device_write_cb(__unused const esp_rmaker_device_t *device, const esp_rmaker_param_t *param,
                                  esp_rmaker_param_val_t val, __unused void *private_data,
                                  __unused esp_rmaker_write_ctx_t *ctx);
+
+static esp_rmaker_node_t *app_rmaker_node_init(const esp_app_desc_t *app_info)
+{
+    uint8_t eth_mac[6] = {};
+    esp_wifi_get_mac(WIFI_IF_STA, eth_mac);
+
+    char node_name[32] = {};
+    snprintf(node_name, sizeof(node_name), "%s-%02x%02x", app_info->project_name, eth_mac[0], eth_mac[1]);
+
+    esp_rmaker_config_t cfg = {
+        .enable_time_sync = true,
+    };
+    return esp_rmaker_node_init(&cfg, node_name, app_info->project_name);
+}
 
 void app_main()
 {
@@ -65,18 +77,15 @@ void app_main()
     ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_PROV_EVENT, WIFI_PROV_START, print_qrcode_handler, NULL, NULL));
 
     // RainMaker
-    esp_rmaker_config_t rainmaker_cfg = {
-        .enable_time_sync = true,
-    };
-    esp_rmaker_node_t *node = esp_rmaker_node_init(&rainmaker_cfg, app_info.project_name, RAINMAKER_NODE_TYPE);
+    esp_rmaker_node_t *node = app_rmaker_node_init(&app_info);
     if (!node)
     {
-        ESP_LOGE(TAG, "could not initialize node, aborting!!!");
+        ESP_LOGE(TAG, "could not initialize rainmaker node, aborting!!!");
         vTaskDelay(5000 / portTICK_PERIOD_MS);
         abort();
     }
 
-    app_services_init(node, app_info.project_name);
+    app_services_init(node);
 
     // Enable OTA
     esp_rmaker_ota_config_t ota_config = {
@@ -110,14 +119,16 @@ static void print_qrcode_handler(__unused void *arg, __unused esp_event_base_t e
     ESP_LOGI(TAG, "To view QR Code, copy paste the URL in a browser:\n%s?data=%s", "https://rainmaker.espressif.com/qrcode.html", payload);
 }
 
-static void app_services_init(esp_rmaker_node_t *node, const char *default_name)
+static void app_services_init(esp_rmaker_node_t *node)
 {
     // Prepare device
     esp_rmaker_device_t *device = esp_rmaker_device_create("Fan", ESP_RMAKER_DEVICE_FAN, NULL);
     assert(device);
 
     ESP_ERROR_CHECK(esp_rmaker_device_add_cb(device, device_write_cb, NULL));
-    ESP_ERROR_CHECK(esp_rmaker_device_add_param(device, esp_rmaker_name_param_create(ESP_RMAKER_DEF_NAME_PARAM, default_name)));
+
+    char *node_name = esp_rmaker_node_get_info(node)->name;
+    ESP_ERROR_CHECK(esp_rmaker_device_add_param(device, esp_rmaker_name_param_create(ESP_RMAKER_DEF_NAME_PARAM, node_name)));
     ESP_ERROR_CHECK(esp_rmaker_node_add_device(node, device));
 
     // Register buttons, sensors, etc
