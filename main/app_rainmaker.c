@@ -13,18 +13,10 @@ static const char TAG[] = "app_rainmaker";
 static void print_qrcode_handler(__unused void *arg, __unused esp_event_base_t event_base,
                                  __unused int32_t event_id, __unused void *event_data)
 {
-    const char version[] = "v1";
-    // needs app_wifi_defs.h
-#if APP_WIFI_PROV_TYPE_BLE
-    const char transport[] = "ble";
-#elif APP_WIFI_PROV_TYPE_SOFT_AP
-    const char transport[] = "softap";
-#endif
-
     char payload[200];
     // {"ver":"%s","name":"%s","pop":"%s","transport":"%s"}
     snprintf(payload, sizeof(payload), "%%7B%%22ver%%22%%3A%%22%s%%22%%2C%%22name%%22%%3A%%22%s%%22%%2C%%22pop%%22%%3A%%22%s%%22%%2C%%22transport%%22%%3A%%22%s%%22%%7D",
-             version, app_wifi_prov_get_service_name(), app_wifi_get_prov_pop(), transport);
+             "v1", app_wifi_prov_get_service_name(), app_wifi_get_prov_pop(), APP_WIFI_PROV_TRANSPORT);
     ESP_LOGI(TAG, "To view QR Code, copy paste the URL in a browser:\n%s?data=%s", "https://rainmaker.espressif.com/qrcode.html", payload);
 }
 
