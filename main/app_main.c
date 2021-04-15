@@ -23,6 +23,9 @@ static const char TAG[] = "app_main";
 static esp_rmaker_param_t *power_param = NULL;
 static esp_rmaker_param_t *blank_param = NULL;
 
+static bool power_value = false;
+static bool blank_value = false;
+
 // Program
 static void app_devices_init(esp_rmaker_node_t *node);
 static void connected_handler(__unused void *handler_arg, __unused esp_event_base_t event_base,
@@ -97,11 +100,12 @@ void app_main()
 static void connected_handler(__unused void *handler_arg, __unused esp_event_base_t event_base,
                               __unused int32_t event_id, __unused void *event_data)
 {
-    // Report state
-    bool power = false; // TODO read
-    esp_rmaker_param_update_and_report(power_param, esp_rmaker_bool(power));
+    // Update values
+    // TODO read from serial
 
-    esp_rmaker_param_update_and_report(blank_param, esp_rmaker_bool(false)); // TODO
+    // Report state
+    esp_rmaker_param_update_and_report(power_param, esp_rmaker_bool(power_value));
+    esp_rmaker_param_update_and_report(blank_param, esp_rmaker_bool(blank_value));
 }
 
 static esp_err_t device_write_cb(__unused const esp_rmaker_device_t *device, const esp_rmaker_param_t *param,
@@ -114,15 +118,33 @@ static esp_err_t device_write_cb(__unused const esp_rmaker_device_t *device, con
     if (strcmp(param_name, ESP_RMAKER_PARAM_POWER) == 0)
     {
         // TODO handle
+        power_value = val.val.b;
 
         // Blank is possible only when powered on
         if (!val.val.b)
         {
-            esp_rmaker_param_update_and_report(blank_param, esp_rmaker_bool(false));
+            blank_value = false;
+            esp_rmaker_param_update_and_report(blank_param, esp_rmaker_bool(blank_value));
         }
 
         // Report
         return esp_rmaker_param_update_and_report(param, val);
+    }
+    if (strcmp(param_name, APP_PARAM_BLANK) == 0)
+    {
+        if (power_value)
+        {
+            // TODO handle
+            blank_value = val.val.b;
+        }
+        else
+        {
+            // Cannot enable
+            blank_value = false;
+        }
+
+        // Report
+        return esp_rmaker_param_update_and_report(param, esp_rmaker_bool(blank_value));
     }
 
     return ESP_OK;
