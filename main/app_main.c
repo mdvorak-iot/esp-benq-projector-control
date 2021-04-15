@@ -16,27 +16,13 @@
 
 static const char TAG[] = "app_main";
 
-// Global state
+// Program
+esp_err_t app_rmaker_init(esp_rmaker_node_t **out_node);
 static void app_services_init(esp_rmaker_node_t *node);
-static void print_qrcode_handler(__unused void *arg, __unused esp_event_base_t event_base,
-                                 __unused int32_t event_id, __unused void *event_data);
+
 static esp_err_t device_write_cb(__unused const esp_rmaker_device_t *device, const esp_rmaker_param_t *param,
                                  esp_rmaker_param_val_t val, __unused void *private_data,
                                  __unused esp_rmaker_write_ctx_t *ctx);
-
-static esp_rmaker_node_t *app_rmaker_node_init(const esp_app_desc_t *app_info)
-{
-    uint8_t eth_mac[6] = {};
-    esp_wifi_get_mac(WIFI_IF_STA, eth_mac);
-
-    char node_name[32] = {};
-    snprintf(node_name, sizeof(node_name), "%s-%02x%02x", app_info->project_name, eth_mac[0], eth_mac[1]);
-
-    esp_rmaker_config_t cfg = {
-        .enable_time_sync = true,
-    };
-    return esp_rmaker_node_init(&cfg, node_name, app_info->project_name);
-}
 
 void app_main()
 {
@@ -74,27 +60,13 @@ void app_main()
     ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_MAX_MODEM));
     ESP_ERROR_CHECK(wifi_reconnect_start());
 
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_PROV_EVENT, WIFI_PROV_START, print_qrcode_handler, NULL, NULL));
-
     // RainMaker
-    esp_rmaker_node_t *node = app_rmaker_node_init(&app_info);
-    if (!node)
-    {
-        ESP_LOGE(TAG, "could not initialize rainmaker node, aborting!!!");
-        vTaskDelay(5000 / portTICK_PERIOD_MS);
-        abort();
-    }
+    esp_rmaker_node_t *node = NULL;
+    ESP_ERROR_CHECK(app_rmaker_init(&node));
 
     app_services_init(node);
 
-    // Enable OTA
-    esp_rmaker_ota_config_t ota_config = {
-        .server_cert = (char *)ESP_RMAKER_OTA_DEFAULT_SERVER_CERT,
-    };
-    ESP_ERROR_CHECK(esp_rmaker_ota_enable(&ota_config, OTA_USING_TOPICS));
-
     // Start
-    ESP_ERROR_CHECK(esp_rmaker_schedule_enable());
     ESP_ERROR_CHECK(esp_rmaker_start());
     ESP_ERROR_CHECK(app_wifi_start(reconfigure));
 
