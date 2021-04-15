@@ -1,7 +1,9 @@
 #include "app_rainmaker.h"
 #include "app_status.h"
+#include "benq_proj.h"
 #include <app_wifi.h>
 #include <double_reset.h>
+#include <driver/uart.h>
 #include <esp_log.h>
 #include <esp_rmaker_core.h>
 #include <esp_rmaker_standard_params.h>
@@ -55,6 +57,15 @@ void setup()
     ESP_ERROR_CHECK(app_rmaker_init(node_name, &node));
 
     app_devices_init(node);
+
+    // Configure UART
+    struct benq_proj_config proj_cfg = {
+        .uart_port = UART_NUM_2,
+        .baud_rate = CONFIG_APP_PROJ_UART_BAUD,
+        .tx_pin = CONFIG_APP_PROJ_UART_TX_PIN,
+        .rx_pin = CONFIG_APP_PROJ_UART_RX_PIN,
+    };
+    ESP_ERROR_CHECK(benq_proj_init(&proj_cfg));
 
     // Start
     ESP_ERROR_CHECK(esp_rmaker_start());
