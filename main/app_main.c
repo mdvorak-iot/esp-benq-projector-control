@@ -115,7 +115,7 @@ static esp_err_t device_write_cb(__unused const esp_rmaker_device_t *device, con
     char *param_name = esp_rmaker_param_get_name(param);
 
     // Power
-    if (strcmp(param_name, ESP_RMAKER_PARAM_POWER) == 0)
+    if (strcmp(param_name, ESP_RMAKER_DEF_POWER_NAME) == 0)
     {
         // TODO handle
         power_value = val.val.b;
