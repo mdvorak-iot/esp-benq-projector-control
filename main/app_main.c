@@ -166,6 +166,7 @@ static void app_devices_init(esp_rmaker_node_t *node)
     power_param = esp_rmaker_param_create(ESP_RMAKER_DEF_POWER_NAME, ESP_RMAKER_PARAM_POWER, esp_rmaker_bool(false), PROP_FLAG_READ | PROP_FLAG_WRITE);
     esp_rmaker_param_add_ui_type(power_param, ESP_RMAKER_UI_TOGGLE);
     ESP_ERROR_CHECK(esp_rmaker_device_add_param(device, power_param));
+    ESP_ERROR_CHECK(esp_rmaker_device_assign_primary_param(device, power_param));
 
     blank_param = esp_rmaker_param_create(APP_PARAM_BLANK, ESP_RMAKER_PARAM_POWER, esp_rmaker_bool(false), PROP_FLAG_READ | PROP_FLAG_WRITE);
     esp_rmaker_param_add_ui_type(blank_param, ESP_RMAKER_UI_TOGGLE);
