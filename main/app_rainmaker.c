@@ -31,6 +31,7 @@ esp_err_t app_rmaker_node_name(char *node_name, size_t node_name_len)
     esp_wifi_get_mac(WIFI_IF_STA, eth_mac);
 
     snprintf(node_name, node_name_len, "%s-%02x%02x", app_info.project_name, eth_mac[0], eth_mac[1]);
+    ESP_LOGI(TAG, "using node name '%s'", node_name);
     return ESP_OK;
 }
 
