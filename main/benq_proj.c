@@ -101,8 +101,8 @@ esp_err_t benq_proj_init(const struct benq_proj_config *cfg)
 esp_err_t benq_proj_command(uart_port_t uart_port, const char *command)
 {
     char cmd_str[100];
-    int len = snprintf(cmd_str, sizeof(cmd_str), "\r*%s*\r", command);
+    int len = snprintf(cmd_str, sizeof(cmd_str), "\r*%s#\r", command);
 
     ESP_LOGI(TAG, "sending: %.*s", len - 2, cmd_str + 1); // log without \r
-    return uart_write_bytes(uart_port, cmd_str, len);
+    return uart_write_bytes(uart_port, cmd_str, len) == len ? ESP_OK : ESP_FAIL;
 }
