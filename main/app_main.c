@@ -157,9 +157,7 @@ static void app_devices_init(esp_rmaker_node_t *node)
     assert(device);
 
     ESP_ERROR_CHECK(esp_rmaker_device_add_cb(device, device_write_cb, NULL));
-
-    char *node_name = esp_rmaker_node_get_info(node)->name;
-    ESP_ERROR_CHECK(esp_rmaker_device_add_param(device, esp_rmaker_name_param_create(ESP_RMAKER_DEF_NAME_PARAM, node_name)));
+    ESP_ERROR_CHECK(esp_rmaker_device_add_param(device, esp_rmaker_name_param_create(ESP_RMAKER_DEF_NAME_PARAM, APP_DEVICE_NAME)));
     ESP_ERROR_CHECK(esp_rmaker_node_add_device(node, device));
 
     // Register buttons, sensors, etc
