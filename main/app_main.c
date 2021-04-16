@@ -82,6 +82,7 @@ void setup()
         .tx_pin = CONFIG_APP_PROJ_UART_TX_PIN,
         .rx_pin = CONFIG_APP_PROJ_UART_RX_PIN,
         .output_cb = proj_output_handler,
+        .us_stack_depth = 2000,
     };
     ESP_ERROR_CHECK(benq_proj_init(&proj_cfg));
 

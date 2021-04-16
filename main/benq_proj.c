@@ -97,7 +97,8 @@ esp_err_t benq_proj_init(const struct benq_proj_config *cfg)
     ctx->output_cb = cfg->output_cb;
 
     // Start background RX task
-    if (xTaskCreate(benq_proj_task, "benq_proj", 1024, ctx, 1, NULL) != pdPASS)
+    uint32_t us_stack_depth = cfg->us_stack_depth ? cfg->us_stack_depth : 1000;
+    if (xTaskCreate(benq_proj_task, "benq_proj", us_stack_depth, ctx, 1, NULL) != pdPASS)
     {
         return ESP_FAIL;
     }

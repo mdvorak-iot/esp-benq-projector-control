@@ -26,6 +26,7 @@ struct benq_proj_config
     int rx_pin;
     int tx_pin;
     benq_proj_output_cb output_cb;
+    uint32_t us_stack_depth;
 };
 
 esp_err_t benq_proj_init(const struct benq_proj_config *cfg);
