@@ -24,7 +24,7 @@ Configure application with
 idf.py menuconfig
 ```
 
-and select `Application configuration` in root menu and configure server URL.
+and select `Application configuration` in root menu and configure application parameters, like pinout, baud, etc.
 
 Flash it via
 
