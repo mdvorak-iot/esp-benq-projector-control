@@ -22,8 +22,4 @@ menu "Application config"
     config APP_PROJ_UART_RX_PIN
         int "Serial RX pin"
         default 18
-
-    config APP_PROJ_UART_BUF
-        int "Serial buffer size, for both RX and TX"
-        default 256
 endmenu
