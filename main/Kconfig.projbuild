@@ -17,9 +17,9 @@ menu "Application config"
 
     config APP_PROJ_UART_TX_PIN
         int "Serial TX pin"
-        default 5
+        default 17
 
     config APP_PROJ_UART_RX_PIN
         int "Serial RX pin"
-        default 17
+        default 5
 endmenu
