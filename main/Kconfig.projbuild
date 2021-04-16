@@ -7,6 +7,10 @@ menu "Application config"
         string "RainMaker device type"
         default "esp.device.projector"
 
+    config APP_PROJ_UART_NUM
+        int "Projector uart number"
+        default 2
+
     config APP_PROJ_UART_BAUD
         int "Projector serial baud"
         default 115200

@@ -6,56 +6,49 @@
 static const char TAG[] = "benq_proj";
 
 #define BENQ_PROJ_UART_BUFFER_SIZE 256
-#define BENQ_PROJ_UART_QUEUE_SIZE 16
 
 struct benq_proj_context
 {
     uart_port_t uart_port;
-    QueueHandle_t event_queue;
 };
+
+static int trim_output(uint8_t **data, int len)
+{
+    // Trim initial white chars
+    uint8_t *ptr = *data;
+    while (ptr < *data + len)
+    {
+        if (*ptr > 0x20 && *ptr <= 127) break;
+        ++ptr;
+    }
+    // Trim trailing white chars
+    uint8_t *end = *data + len;
+    while (end > ptr)
+    {
+        uint8_t c = *(end - 1);
+        if (c > 0x20 && c <= 127) break;
+        --end;
+    }
+
+    // Result
+    *data = ptr;
+    return (int)(end - ptr);
+}
 
 _Noreturn static void benq_proj_task(void *arg)
 {
     struct benq_proj_context *ctx = (struct benq_proj_context *)arg;
-    uart_event_t event = {};
 
+    uint8_t *data = (uint8_t *)malloc(BENQ_PROJ_UART_BUFFER_SIZE);
     while (1)
     {
-        if (xQueueReceive(ctx->event_queue, &event, pdMS_TO_TICKS(200)))
+        int len = uart_read_bytes(ctx->uart_port, data, BENQ_PROJ_UART_BUFFER_SIZE, 100 / portTICK_RATE_MS);
+        if (len > 0)
         {
-            switch (event.type)
-            {
-            case UART_DATA:
-                break;
-            case UART_FIFO_OVF:
-                ESP_LOGW(TAG, "HW FIFO Overflow");
-                uart_flush(ctx->uart_port);
-                xQueueReset(ctx->event_queue);
-                break;
-            case UART_BUFFER_FULL:
-                ESP_LOGW(TAG, "Ring Buffer Full");
-                uart_flush(ctx->uart_port);
-                xQueueReset(ctx->event_queue);
-                break;
-            case UART_BREAK:
-                ESP_LOGW(TAG, "Rx Break");
-                break;
-            case UART_PARITY_ERR:
-                ESP_LOGE(TAG, "Parity Error");
-                break;
-            case UART_FRAME_ERR:
-                ESP_LOGE(TAG, "Frame Error");
-                break;
-            case UART_PATTERN_DET:
-                // TODO esp_handle_uart_pattern(ctx);
-                break;
-            default:
-                ESP_LOGW(TAG, "unknown uart event type: %d", event.type);
-                break;
-            }
+            uint8_t *ptr = data;
+            len = trim_output(&ptr, len);
+            ESP_LOGI(TAG, "response: %.*s", len, (const char *)ptr);
         }
-        /* Drive the event loop */
-        // TODO esp_event_loop_run(ctx->event_loop_hdl, pdMS_TO_TICKS(50));
     }
 }
 
@@ -69,21 +62,47 @@ esp_err_t benq_proj_init(const struct benq_proj_config *cfg)
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
     };
 
-    // TODO handle error and return
-    ESP_ERROR_CHECK(uart_param_config(cfg->uart_port, &uart_cfg));
-    ESP_ERROR_CHECK(uart_set_pin(cfg->uart_port, cfg->tx_pin, cfg->rx_pin, -1, -1));
+    int intr_alloc_flags = 0;
+#if CONFIG_UART_ISR_IN_IRAM
+    intr_alloc_flags = ESP_INTR_FLAG_IRAM;
+#endif
 
-    QueueHandle_t event_queue = NULL;
-    ESP_ERROR_CHECK(uart_driver_install(cfg->uart_port, BENQ_PROJ_UART_BUFFER_SIZE, BENQ_PROJ_UART_BUFFER_SIZE, BENQ_PROJ_UART_QUEUE_SIZE, &event_queue, 0));
+    esp_err_t err = ESP_OK;
 
-    // TODO malloc
+    if ((err = uart_driver_install(cfg->uart_port, BENQ_PROJ_UART_BUFFER_SIZE * 2, 0, 0, NULL, intr_alloc_flags)) != ESP_OK)
+    {
+        return err;
+    }
+    if ((err = uart_param_config(cfg->uart_port, &uart_cfg)) != ESP_OK)
+    {
+        return err;
+    }
+    if ((err = uart_set_pin(cfg->uart_port, cfg->tx_pin, cfg->rx_pin, -1, -1)) != ESP_OK)
+    {
+        return err;
+    }
+
+    // Allocate context for the task
     struct benq_proj_context *ctx = malloc(sizeof(*ctx));
     memset(ctx, 0, sizeof(*ctx));
     ctx->uart_port = cfg->uart_port;
-    ctx->event_queue = event_queue;
 
-    // TODO
-    xTaskCreate(benq_proj_task, "benq_proj", 1024, ctx, 1, NULL);
+    // Start background RX task
+    if (xTaskCreate(benq_proj_task, "benq_proj", 1024, ctx, 1, NULL) != pdPASS)
+    {
+        return ESP_FAIL;
+    }
 
+    // Success
+    ESP_LOGI(TAG, "initialized on %d pins tx=%d rx=%d", cfg->uart_port, cfg->tx_pin, cfg->rx_pin);
     return ESP_OK;
+}
+
+esp_err_t benq_proj_command(uart_port_t uart_port, const char *command)
+{
+    char cmd_str[100];
+    int len = snprintf(cmd_str, sizeof(cmd_str), "\r*%s*\r", command);
+
+    ESP_LOGI(TAG, "sending: %.*s", len - 2, cmd_str + 1); // log without \r
+    return uart_write_bytes(uart_port, cmd_str, len);
 }

@@ -24,7 +24,6 @@ static esp_rmaker_param_t *power_param = NULL;
 static esp_rmaker_param_t *blank_param = NULL;
 
 static bool power_value = false;
-static bool blank_value = false;
 
 // Program
 static void app_devices_init(esp_rmaker_node_t *node);
@@ -73,7 +72,7 @@ void setup()
 
     // Configure UART
     struct benq_proj_config proj_cfg = {
-        .uart_port = UART_NUM_2,
+        .uart_port = CONFIG_APP_PROJ_UART_NUM,
         .baud_rate = CONFIG_APP_PROJ_UART_BAUD,
         .tx_pin = CONFIG_APP_PROJ_UART_TX_PIN,
         .rx_pin = CONFIG_APP_PROJ_UART_RX_PIN,
@@ -100,12 +99,12 @@ void app_main()
 static void connected_handler(__unused void *handler_arg, __unused esp_event_base_t event_base,
                               __unused int32_t event_id, __unused void *event_data)
 {
-    // Update values
-    // TODO read from serial
-
-    // Report state
-    esp_rmaker_param_update_and_report(power_param, esp_rmaker_bool(power_value));
-    esp_rmaker_param_update_and_report(blank_param, esp_rmaker_bool(blank_value));
+    // When connection is re-established, always assume projector is powered off
+    // This is simplification, because while it is possible to read the current state,
+    // it is too little complex for this simple use-case
+    power_value = false;
+    esp_rmaker_param_update_and_report(power_param, esp_rmaker_bool(false));
+    esp_rmaker_param_update_and_report(blank_param, esp_rmaker_bool(false));
 }
 
 static esp_err_t device_write_cb(__unused const esp_rmaker_device_t *device, const esp_rmaker_param_t *param,
@@ -117,34 +116,43 @@ static esp_err_t device_write_cb(__unused const esp_rmaker_device_t *device, con
     // Power
     if (strcmp(param_name, ESP_RMAKER_DEF_POWER_NAME) == 0)
     {
-        // TODO handle
+        // Handle
+        esp_err_t err = benq_proj_command(CONFIG_APP_PROJ_UART_NUM, val.val.b ? BENQ_PROJ_CMD_POWER_ON : BENQ_PROJ_CMD_POWER_OFF);
+        if (err != ESP_OK)
+        {
+            ESP_LOGE(TAG, "failed to send command: %d %s", err, esp_err_to_name(err));
+            return err;
+        }
         power_value = val.val.b;
 
         // Blank is possible only when powered on
         if (!val.val.b)
         {
-            blank_value = false;
-            esp_rmaker_param_update_and_report(blank_param, esp_rmaker_bool(blank_value));
+            esp_rmaker_param_update_and_report(blank_param, esp_rmaker_bool(false));
         }
 
         // Report
         return esp_rmaker_param_update_and_report(param, val);
     }
+    // Blank
     if (strcmp(param_name, APP_PARAM_BLANK) == 0)
     {
         if (power_value)
         {
-            // TODO handle
-            blank_value = val.val.b;
+            // Handle
+            esp_err_t err = benq_proj_command(CONFIG_APP_PROJ_UART_NUM, val.val.b ? BENQ_PROJ_CMD_BLANK_ON : BENQ_PROJ_CMD_BLANK_OFF);
+            if (err != ESP_OK)
+            {
+                ESP_LOGE(TAG, "failed to send command: %d %s", err, esp_err_to_name(err));
+                return err;
+            }
+            return esp_rmaker_param_update_and_report(param, val);
         }
         else
         {
             // Cannot enable
-            blank_value = false;
+            return esp_rmaker_param_update_and_report(param, esp_rmaker_bool(false));
         }
-
-        // Report
-        return esp_rmaker_param_update_and_report(param, esp_rmaker_bool(blank_value));
     }
 
     return ESP_OK;
