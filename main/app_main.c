@@ -17,11 +17,13 @@
 #define APP_DEVICE_NAME CONFIG_APP_DEVICE_NAME
 #define APP_DEVICE_TYPE CONFIG_APP_DEVICE_TYPE
 #define APP_PARAM_BLANK "Blank"
+#define APP_PARAM_SOURCE "Source"
 
 static const char TAG[] = "app_main";
 
 static esp_rmaker_param_t *power_param = NULL;
 static esp_rmaker_param_t *blank_param = NULL;
+static esp_rmaker_param_t *source_param = NULL;
 
 static bool power_value = false;
 
@@ -151,8 +153,24 @@ static esp_err_t device_write_cb(__unused const esp_rmaker_device_t *device, con
         else
         {
             // Cannot enable
-            return esp_rmaker_param_update_and_report(param, esp_rmaker_bool(false));
+            return ESP_ERR_INVALID_STATE;
         }
+    }
+    // Source
+    if (strcmp(param_name, APP_PARAM_SOURCE) == 0)
+    {
+        // Handle
+        char cmd[100];
+        snprintf(cmd, sizeof(cmd), BENQ_PROJ_CMD_SOURCE("%s"), val.val.s);
+        esp_err_t err = benq_proj_command(CONFIG_APP_PROJ_UART_NUM, cmd);
+        if (err != ESP_OK)
+        {
+            ESP_LOGE(TAG, "failed to send command: %d %s", err, esp_err_to_name(err));
+            return err;
+        }
+
+        // Report
+        return esp_rmaker_param_update_and_report(param, val);
     }
 
     return ESP_OK;
@@ -170,11 +188,17 @@ static void app_devices_init(esp_rmaker_node_t *node)
 
     // Register buttons, sensors, etc
     power_param = esp_rmaker_param_create(ESP_RMAKER_DEF_POWER_NAME, ESP_RMAKER_PARAM_POWER, esp_rmaker_bool(false), PROP_FLAG_READ | PROP_FLAG_WRITE);
-    esp_rmaker_param_add_ui_type(power_param, ESP_RMAKER_UI_TOGGLE);
+    ESP_ERROR_CHECK(esp_rmaker_param_add_ui_type(power_param, ESP_RMAKER_UI_TOGGLE));
     ESP_ERROR_CHECK(esp_rmaker_device_add_param(device, power_param));
     ESP_ERROR_CHECK(esp_rmaker_device_assign_primary_param(device, power_param));
 
     blank_param = esp_rmaker_param_create(APP_PARAM_BLANK, ESP_RMAKER_PARAM_POWER, esp_rmaker_bool(false), PROP_FLAG_READ | PROP_FLAG_WRITE);
-    esp_rmaker_param_add_ui_type(blank_param, ESP_RMAKER_UI_TOGGLE);
+    ESP_ERROR_CHECK(esp_rmaker_param_add_ui_type(blank_param, ESP_RMAKER_UI_TOGGLE));
     ESP_ERROR_CHECK(esp_rmaker_device_add_param(device, blank_param));
+
+    source_param = esp_rmaker_param_create(APP_PARAM_SOURCE, NULL, esp_rmaker_str(BENQ_PROJ_SOURCE_HDMI), PROP_FLAG_READ | PROP_FLAG_WRITE);
+    ESP_ERROR_CHECK(esp_rmaker_param_add_ui_type(source_param, ESP_RMAKER_UI_DROPDOWN));
+    static const char *sources[] = {BENQ_PROJ_SOURCE_HDMI, BENQ_PROJ_SOURCE_HDMI2, BENQ_PROJ_SOURCE_RGB};
+    ESP_ERROR_CHECK(esp_rmaker_param_add_valid_str_list(source_param, sources, 3));
+    ESP_ERROR_CHECK(esp_rmaker_device_add_param(device, source_param));
 }
