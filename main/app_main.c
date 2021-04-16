@@ -201,7 +201,7 @@ static void app_devices_init(esp_rmaker_node_t *node)
     ESP_ERROR_CHECK(esp_rmaker_param_add_ui_type(blank_param, ESP_RMAKER_UI_TOGGLE));
     ESP_ERROR_CHECK(esp_rmaker_device_add_param(device, blank_param));
 
-    source_param = esp_rmaker_param_create(APP_PARAM_SOURCE, NULL, esp_rmaker_str(BENQ_PROJ_SOURCE_HDMI), PROP_FLAG_READ | PROP_FLAG_WRITE);
+    source_param = esp_rmaker_param_create(APP_PARAM_SOURCE, NULL, esp_rmaker_str(BENQ_PROJ_SOURCE_HDMI), PROP_FLAG_READ | PROP_FLAG_WRITE | PROP_FLAG_PERSIST);
     ESP_ERROR_CHECK(esp_rmaker_param_add_ui_type(source_param, ESP_RMAKER_UI_DROPDOWN));
     static const char *sources[] = {BENQ_PROJ_SOURCE_HDMI, BENQ_PROJ_SOURCE_HDMI2, BENQ_PROJ_SOURCE_RGB};
     ESP_ERROR_CHECK(esp_rmaker_param_add_valid_str_list(source_param, sources, 3));
