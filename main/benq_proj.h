@@ -17,12 +17,15 @@ extern "C" {
 #define BENQ_PROJ_SOURCE_HDMI2 "hdmi2"
 #define BENQ_PROJ_SOURCE_RGB "rgb"
 
+typedef void (*benq_proj_output_cb)(const char *data, size_t len);
+
 struct benq_proj_config
 {
     uart_port_t uart_port;
     int baud_rate;
     int rx_pin;
     int tx_pin;
+    benq_proj_output_cb output_cb;
 };
 
 esp_err_t benq_proj_init(const struct benq_proj_config *cfg);

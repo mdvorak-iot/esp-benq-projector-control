@@ -10,6 +10,7 @@ static const char TAG[] = "benq_proj";
 struct benq_proj_context
 {
     uart_port_t uart_port;
+    benq_proj_output_cb output_cb;
 };
 
 static int trim_output(uint8_t **data, int len)
@@ -39,7 +40,7 @@ _Noreturn static void benq_proj_task(void *arg)
 {
     struct benq_proj_context *ctx = (struct benq_proj_context *)arg;
 
-    uint8_t *data = (uint8_t *)malloc(BENQ_PROJ_UART_BUFFER_SIZE);
+    uint8_t *data = (uint8_t *)malloc(BENQ_PROJ_UART_BUFFER_SIZE + 1); // space for null terminator
     while (1)
     {
         int len = uart_read_bytes(ctx->uart_port, data, BENQ_PROJ_UART_BUFFER_SIZE, 100 / portTICK_RATE_MS);
@@ -47,7 +48,14 @@ _Noreturn static void benq_proj_task(void *arg)
         {
             uint8_t *ptr = data;
             len = trim_output(&ptr, len);
+            ptr[len] = '\0'; // we have always space in the buffer for a null terminator
+
             ESP_LOGI(TAG, "response: %.*s", len, (const char *)ptr);
+
+            if (ctx->output_cb)
+            {
+                ctx->output_cb((const char *)ptr, len);
+            }
         }
     }
 }
@@ -86,6 +94,7 @@ esp_err_t benq_proj_init(const struct benq_proj_config *cfg)
     struct benq_proj_context *ctx = malloc(sizeof(*ctx));
     memset(ctx, 0, sizeof(*ctx));
     ctx->uart_port = cfg->uart_port;
+    ctx->output_cb = cfg->output_cb;
 
     // Start background RX task
     if (xTaskCreate(benq_proj_task, "benq_proj", 1024, ctx, 1, NULL) != pdPASS)

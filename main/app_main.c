@@ -18,12 +18,14 @@
 #define APP_DEVICE_TYPE CONFIG_APP_DEVICE_TYPE
 #define APP_PARAM_BLANK "Blank"
 #define APP_PARAM_SOURCE "Source"
+#define APP_PARAM_STATUS "Status"
 
 static const char TAG[] = "app_main";
 
 static esp_rmaker_param_t *power_param = NULL;
 static esp_rmaker_param_t *blank_param = NULL;
 static esp_rmaker_param_t *source_param = NULL;
+static esp_rmaker_param_t *status_param = NULL;
 
 static bool power_value = false;
 
@@ -31,6 +33,7 @@ static bool power_value = false;
 static void app_devices_init(esp_rmaker_node_t *node);
 static void connected_handler(__unused void *handler_arg, __unused esp_event_base_t event_base,
                               __unused int32_t event_id, __unused void *event_data);
+static void proj_output_handler(const char *data, size_t len);
 
 void setup()
 {
@@ -78,6 +81,7 @@ void setup()
         .baud_rate = CONFIG_APP_PROJ_UART_BAUD,
         .tx_pin = CONFIG_APP_PROJ_UART_TX_PIN,
         .rx_pin = CONFIG_APP_PROJ_UART_RX_PIN,
+        .output_cb = proj_output_handler,
     };
     ESP_ERROR_CHECK(benq_proj_init(&proj_cfg));
 
@@ -201,4 +205,12 @@ static void app_devices_init(esp_rmaker_node_t *node)
     static const char *sources[] = {BENQ_PROJ_SOURCE_HDMI, BENQ_PROJ_SOURCE_HDMI2, BENQ_PROJ_SOURCE_RGB};
     ESP_ERROR_CHECK(esp_rmaker_param_add_valid_str_list(source_param, sources, 3));
     ESP_ERROR_CHECK(esp_rmaker_device_add_param(device, source_param));
+
+    status_param = esp_rmaker_param_create(APP_PARAM_STATUS, NULL, esp_rmaker_str("Unknown"), PROP_FLAG_READ);
+    ESP_ERROR_CHECK(esp_rmaker_device_add_param(device, status_param));
+}
+
+static void proj_output_handler(const char *data, __unused size_t len)
+{
+    esp_rmaker_param_update_and_report(status_param, esp_rmaker_str(data));
 }
