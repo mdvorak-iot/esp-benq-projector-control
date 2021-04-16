@@ -1,9 +1,8 @@
-#include "app_rainmaker.h"
 #include "app_status.h"
 #include "benq_proj.h"
+#include <app_rainmaker.h>
 #include <app_wifi.h>
 #include <double_reset.h>
-#include <driver/uart.h>
 #include <esp_log.h>
 #include <esp_rmaker_common_events.h>
 #include <esp_rmaker_core.h>
@@ -87,7 +86,7 @@ void setup()
     ESP_ERROR_CHECK(benq_proj_init(&proj_cfg));
 
     // Start
-    ESP_ERROR_CHECK(tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, node_name)); // NOTE this wasn't available before during WiFi init
+    ESP_ERROR_CHECK(tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, node_name)); // NOTE this isn't available before WiFi init
     ESP_ERROR_CHECK(esp_rmaker_start());
     ESP_ERROR_CHECK(app_wifi_start(reconfigure));
 

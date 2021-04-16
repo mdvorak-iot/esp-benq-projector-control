@@ -6,15 +6,11 @@ idf_component_register(
         REQUIRES
         freertos
         nvs_flash
-        log
-        esp32
-        esp_wifi
-        app_update
-        wifi_provisioning
-        esp_rainmaker
         rmaker_common
+        wifi_provisioning
         double_reset
         status_led
         wifi_reconnect
         app_wifi
+        rainmaker_init
 )
