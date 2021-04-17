@@ -6,6 +6,7 @@
 #include <esp_log.h>
 #include <esp_rmaker_common_events.h>
 #include <esp_rmaker_core.h>
+#include <esp_rmaker_schedule.h>
 #include <esp_rmaker_standard_params.h>
 #include <esp_rmaker_standard_types.h>
 #include <esp_wifi.h>
@@ -70,6 +71,7 @@ void setup()
 
     esp_rmaker_node_t *node = NULL;
     ESP_ERROR_CHECK(app_rmaker_init(node_name, &node));
+    ESP_ERROR_CHECK(esp_rmaker_schedule_enable());
     ESP_ERROR_CHECK(esp_event_handler_instance_register(RMAKER_COMMON_EVENT, RMAKER_MQTT_EVENT_CONNECTED, connected_handler, node, NULL));
 
     app_devices_init(node);
